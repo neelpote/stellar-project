@@ -7,6 +7,7 @@ import { FounderView } from './components/FounderView';
 import { AdminView } from './components/AdminView';
 import { VCView } from './components/VCView';
 import { PublicVotingView } from './components/PublicVotingView';
+import { AboutView } from './components/AboutView';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { CONTRACT_ID, NETWORK_PASSPHRASE } from './config';
 import { server } from './stellar';
@@ -20,7 +21,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type ViewMode = 'founder' | 'vc' | 'voting' | 'admin';
+type ViewMode = 'founder' | 'vc' | 'voting' | 'admin' | 'about';
 
 function AppContent() {
   const { wallet, connectWallet, disconnectWallet } = useWallet();
@@ -78,6 +79,11 @@ function AppContent() {
   const isAdmin = wallet.publicKey && adminAddress && !adminLoading && wallet.publicKey === adminAddress;
 
   const renderView = () => {
+    // Allow About view without wallet connection
+    if (viewMode === 'about') {
+      return <AboutView />;
+    }
+    
     if (!wallet.isConnected || !wallet.publicKey) return null;
     
     // Only allow admin view if user is actually the admin
@@ -165,6 +171,16 @@ function AppContent() {
                       Become VC
                     </button>
                   )}
+                  <button
+                    onClick={() => setViewMode('about')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all text-sm border-2 ${
+                      viewMode === 'about'
+                        ? 'bg-blue-50 text-blue-700 border-blue-300'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50 border-gray-300'
+                    }`}
+                  >
+                    About
+                  </button>
                   {isAdmin && adminAddress === wallet.publicKey && (
                     <button
                       onClick={() => setViewMode('admin')}
@@ -235,12 +251,20 @@ function AppContent() {
               </p>
             </div>
             
-            <button
-              onClick={connectWallet}
-              className="btn btn-primary px-8 py-3 text-lg font-semibold mb-20"
-            >
-              Connect Freighter Wallet
-            </button>
+            <div className="flex gap-4 justify-center mb-8">
+              <button
+                onClick={connectWallet}
+                className="btn btn-primary px-8 py-3 text-lg font-semibold"
+              >
+                Connect Freighter Wallet
+              </button>
+              <button
+                onClick={() => setViewMode('about')}
+                className="btn btn-primary px-8 py-3 text-lg font-semibold bg-gray-600 hover:bg-gray-700"
+              >
+                Learn More
+              </button>
+            </div>
 
             {/* Feature Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 max-w-5xl mx-auto">
