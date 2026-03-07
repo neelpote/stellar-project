@@ -309,9 +309,9 @@ export const AboutView = () => {
       </div>
 
       {/* Call to Action */}
-      <div className="card bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center">
-        <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-        <p className="text-xl mb-8 opacity-90">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center rounded-lg p-12 border-2 border-blue-300 shadow-md">
+        <h2 className="text-3xl font-bold mb-4 text-white">Ready to Get Started?</h2>
+        <p className="text-xl mb-8 text-white">
           Join the decentralized accelerator revolution today
         </p>
         <div className="flex gap-4 justify-center flex-wrap">
