@@ -257,7 +257,24 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
       {!startupData ? (
         <div className="space-y-6">
-          {/* Application Form */}
+          {/* Demo Mode Banner */}
+      {!import.meta.env.VITE_PINATA_JWT && !import.meta.env.VITE_PINATA_API_KEY && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <span className="text-yellow-400 text-xl">🎭</span>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>Demo Mode:</strong> IPFS storage is simulated using browser storage. 
+                For production use, configure Pinata IPFS credentials.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Application Form */}
           <div className="cyber-card p-8 hover-glow">
             <h3 className="text-2xl font-bold cyber-subtitle mb-4 flex items-center">
               <span className="text-3xl mr-3 neon-blue">📝</span>
