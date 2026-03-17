@@ -3,44 +3,56 @@ import { CONTRACT_ID, SOROBAN_RPC_URL, NETWORK_PASSPHRASE } from './config';
 
 const server = new StellarSdk.SorobanRpc.Server(SOROBAN_RPC_URL);
 
+// Helper to parse Option<T> ScVal — Soroban returns Option as a map with key "Some" or "None"
+const parseOptionScVal = (scVal: StellarSdk.xdr.ScVal) => {
+  try {
+    // Option::None is scvVoid
+    if (scVal.switch().name === 'scvVoid') return null;
+
+    // Option::Some(value) is scvMap with one entry: key="Some", val=<inner>
+    if (scVal.switch().name === 'scvMap') {
+      const map = scVal.map();
+      if (!map || map.length === 0) return null;
+      const entry = map[0];
+      const keyName = entry.key().switch().name === 'scvSymbol'
+        ? entry.key().sym().toString()
+        : null;
+      if (keyName === 'Some') {
+        return StellarSdk.scValToNative(entry.val());
+      }
+      return null;
+    }
+
+    // Fallback: try direct conversion
+    return StellarSdk.scValToNative(scVal);
+  } catch {
+    return null;
+  }
+};
+
 export const getStartupStatus = async (founderAddress: string) => {
   try {
-    // Validate the address format first
-    if (!founderAddress) {
-      throw new Error('Founder address is required');
-    }
-    
-    try {
-      StellarSdk.StrKey.decodeEd25519PublicKey(founderAddress);
-    } catch (error) {
-      throw new Error('Invalid Stellar address format');
-    }
+    if (!founderAddress) return null;
+    try { StellarSdk.StrKey.decodeEd25519PublicKey(founderAddress); } catch { return null; }
 
     const contract = new StellarSdk.Contract(CONTRACT_ID);
     const sourceAccount = await server.getAccount(founderAddress);
-    
+
     const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
       fee: '100',
       networkPassphrase: NETWORK_PASSPHRASE,
     })
-      .addOperation(
-        contract.call(
-          'get_startup_status',
-          StellarSdk.Address.fromString(founderAddress).toScVal()
-        )
-      )
+      .addOperation(contract.call('get_startup_status', StellarSdk.Address.fromString(founderAddress).toScVal()))
       .setTimeout(30)
       .build();
 
     const simulated = await server.simulateTransaction(transaction);
-    
+
     if (StellarSdk.SorobanRpc.Api.isSimulationSuccess(simulated)) {
       const result = simulated.result?.retval;
-      if (result) {
-        return StellarSdk.scValToNative(result);
-      }
+      if (result) return parseOptionScVal(result);
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error fetching startup status:', error);
@@ -52,7 +64,7 @@ export const getAdmin = async () => {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
     const dummyAccount = await server.getAccount('GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF');
-    
+
     const transaction = new StellarSdk.TransactionBuilder(dummyAccount, {
       fee: '100',
       networkPassphrase: NETWORK_PASSPHRASE,
@@ -62,15 +74,19 @@ export const getAdmin = async () => {
       .build();
 
     const simulated = await server.simulateTransaction(transaction);
-    
+
     if (StellarSdk.SorobanRpc.Api.isSimulationSuccess(simulated)) {
       const result = simulated.result?.retval;
       if (result) {
-        const address = StellarSdk.scValToNative(result);
-        return address;
+        // get_admin returns Address directly (not Option), try direct then fallback
+        try {
+          return StellarSdk.scValToNative(result);
+        } catch {
+          return parseOptionScVal(result);
+        }
       }
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error fetching admin:', error);
@@ -141,29 +157,22 @@ export const getVCData = async (vcAddress: string) => {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
     const dummyAccount = await server.getAccount('GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF');
-    
+
     const transaction = new StellarSdk.TransactionBuilder(dummyAccount, {
       fee: '100',
       networkPassphrase: NETWORK_PASSPHRASE,
     })
-      .addOperation(
-        contract.call(
-          'get_vc_data',
-          StellarSdk.Address.fromString(vcAddress).toScVal()
-        )
-      )
+      .addOperation(contract.call('get_vc_data', StellarSdk.Address.fromString(vcAddress).toScVal()))
       .setTimeout(30)
       .build();
 
     const simulated = await server.simulateTransaction(transaction);
-    
+
     if (StellarSdk.SorobanRpc.Api.isSimulationSuccess(simulated)) {
       const result = simulated.result?.retval;
-      if (result) {
-        return StellarSdk.scValToNative(result);
-      }
+      if (result) return parseOptionScVal(result);
     }
-    
+
     return null;
   } catch (error) {
     console.error('Error fetching VC data:', error);
