@@ -13,7 +13,7 @@ import { AboutView } from './components/AboutView';
 import { PublicStartupDirectory } from './components/PublicStartupDirectory';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { CONTRACT_ID, NETWORK_PASSPHRASE } from './config';
-import { server } from './stellar';
+import { server, getAccount } from './stellar';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, refetchOnWindowFocus: false } },
@@ -39,7 +39,7 @@ function AppContent() {
       if (!wallet.publicKey) return false;
       try {
         const contract = new StellarSdk.Contract(CONTRACT_ID);
-        const sourceAccount = await server.getAccount(wallet.publicKey);
+        const sourceAccount = await getAccount(wallet.publicKey);
         const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
           fee: '100', networkPassphrase: NETWORK_PASSPHRASE,
         })

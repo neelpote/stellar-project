@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE } from '../config';
-import { server, getStartupStatus } from '../stellar';
+import { server, getStartupStatus, getAccount } from '../stellar';
 import { verifyAdmin, EXPECTED_ADMIN } from '../adminTest';
 
 interface AdminViewProps {
@@ -41,7 +41,7 @@ export const AdminView = ({ publicKey }: AdminViewProps) => {
       if (!startupStatus) throw new Error('Startup application not found. The founder must submit an application first.');
       if (startupStatus.approved) throw new Error('This application has already been approved.');
 
-      const sourceAccount = await server.getAccount(publicKey);
+      const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const transaction = new StellarSdk.TransactionBuilder(sourceAccount, { fee: StellarSdk.BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })
         .addOperation(contract.call('approve_application', StellarSdk.Address.fromString(publicKey).toScVal(), StellarSdk.Address.fromString(founder).toScVal()))

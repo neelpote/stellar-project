@@ -3,7 +3,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE, TESTNET_XLM_CONTRACT } from '../config';
-import { server, getAllVCs } from '../stellar';
+import { server, getAllVCs, getAccount } from '../stellar';
 import { useStartupStatus } from '../hooks/useStartupStatus';
 import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 import { uploadToIPFS } from '../ipfs';
@@ -37,7 +37,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
   const applyMutation = useMutation({
     mutationFn: async (data: { name: string; desc: string; url: string; team: string; goal: string }) => {
       const ipfsCid = await uploadToIPFS({ project_name: data.name, description: data.desc, project_url: data.url, team_info: data.team });
-      const sourceAccount = await server.getAccount(publicKey);
+      const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const goalInStroops = Math.floor(parseFloat(data.goal) * 1e7);
       const transaction = new StellarSdk.TransactionBuilder(sourceAccount, { fee: StellarSdk.BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })
@@ -62,7 +62,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
   const claimMutation = useMutation({
     mutationFn: async () => {
-      const sourceAccount = await server.getAccount(publicKey);
+      const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const xlmAddress = new StellarSdk.Address(TESTNET_XLM_CONTRACT);
       const transaction = new StellarSdk.TransactionBuilder(sourceAccount, { fee: StellarSdk.BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })

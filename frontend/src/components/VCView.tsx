@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE, TESTNET_XLM_CONTRACT, HORIZON_URL } from '../config';
-import { server, getStartupStatus, getVCStakeRequired, getVCData, getAllStartups } from '../stellar';
+import { server, getStartupStatus, getVCStakeRequired, getVCData, getAllStartups, getAccount } from '../stellar';
 
 const horizonServer = new StellarSdk.Horizon.Server(HORIZON_URL);
 
@@ -55,7 +55,7 @@ export const VCView = ({ publicKey }: VCViewProps) => {
 
   const stakeMutation = useMutation({
     mutationFn: async (name: string) => {
-      const sourceAccount = await server.getAccount(publicKey);
+      const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const xlmAddress = new StellarSdk.Address(TESTNET_XLM_CONTRACT);
 
@@ -105,7 +105,7 @@ export const VCView = ({ publicKey }: VCViewProps) => {
 
   const investMutation = useMutation({
     mutationFn: async ({ founder, amount }: { founder: string; amount: string }) => {
-      const sourceAccount = await server.getAccount(publicKey);
+      const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const amountInStroops = Math.floor(parseFloat(amount) * 1e7);
       const xlmAddress = new StellarSdk.Address(TESTNET_XLM_CONTRACT);

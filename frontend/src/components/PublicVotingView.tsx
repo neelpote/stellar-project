@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE } from '../config';
-import { server, getStartupStatus, getAllStartups } from '../stellar';
+import { server, getStartupStatus, getAllStartups, getAccount } from '../stellar';
 import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 
 // Clean startup directory card component
@@ -160,7 +160,7 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
       
       try {
         const contract = new StellarSdk.Contract(CONTRACT_ID);
-        const sourceAccount = await server.getAccount(publicKey);
+        const sourceAccount = await getAccount(publicKey);
         
         const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
           fee: '100',
@@ -196,7 +196,7 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
   // Vote mutation
   const voteMutation = useMutation({
     mutationFn: async ({ founder, voteYes }: { founder: string; voteYes: boolean }) => {
-      const sourceAccount = await server.getAccount(publicKey);
+      const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
 
       const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
