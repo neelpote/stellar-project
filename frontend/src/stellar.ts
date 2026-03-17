@@ -129,3 +129,67 @@ export const getAllVCs = async (): Promise<string[]> => {
     return [];
   }
 };
+
+export const getVCInvestment = async (vc: string, founder: string): Promise<string> => {
+  try {
+    const contract = new StellarSdk.Contract(CONTRACT_ID);
+    const txXdr = await buildTx(
+      DUMMY,
+      contract.call(
+        'get_vc_investment',
+        StellarSdk.Address.fromString(vc).toScVal(),
+        StellarSdk.Address.fromString(founder).toScVal()
+      )
+    );
+    return (await simulate(txXdr))?.toString() ?? '0';
+  } catch {
+    return '0';
+  }
+};
+
+export const getStartupInvestors = async (founder: string): Promise<string[]> => {
+  try {
+    const contract = new StellarSdk.Contract(CONTRACT_ID);
+    const txXdr = await buildTx(
+      DUMMY,
+      contract.call('get_startup_investors', StellarSdk.Address.fromString(founder).toScVal())
+    );
+    return (await simulate(txXdr)) ?? [];
+  } catch {
+    return [];
+  }
+};
+
+export const hasVotedMilestone = async (vc: string, founder: string, milestone: number): Promise<boolean> => {
+  try {
+    const contract = new StellarSdk.Contract(CONTRACT_ID);
+    const txXdr = await buildTx(
+      DUMMY,
+      contract.call(
+        'has_voted_milestone',
+        StellarSdk.Address.fromString(vc).toScVal(),
+        StellarSdk.Address.fromString(founder).toScVal(),
+        StellarSdk.nativeToScVal(milestone, { type: 'u32' })
+      )
+    );
+    return (await simulate(txXdr)) ?? false;
+  } catch {
+    return false;
+  }
+};
+
+// Returns [approve_count, total_investors] for the current milestone
+export const getMilestoneVoteTally = async (founder: string): Promise<[number, number]> => {
+  try {
+    const contract = new StellarSdk.Contract(CONTRACT_ID);
+    const txXdr = await buildTx(
+      DUMMY,
+      contract.call('get_milestone_vote_tally', StellarSdk.Address.fromString(founder).toScVal())
+    );
+    const result = await simulate(txXdr);
+    if (Array.isArray(result) && result.length === 2) return [Number(result[0]), Number(result[1])];
+    return [0, 0];
+  } catch {
+    return [0, 0];
+  }
+};

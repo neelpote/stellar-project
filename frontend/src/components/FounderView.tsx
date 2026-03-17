@@ -3,7 +3,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE, TESTNET_XLM_CONTRACT } from '../config';
-import { server, getAllVCs, getAccount } from '../stellar';
+import { server, getAllVCs, getAccount, getMilestoneVoteTally } from '../stellar';
 import { useStartupStatus } from '../hooks/useStartupStatus';
 import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 import { uploadToIPFS } from '../ipfs';
@@ -18,10 +18,20 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
   const [projectUrl, setProjectUrl] = useState('');
   const [teamInfo, setTeamInfo] = useState('');
   const [fundingGoal, setFundingGoal] = useState('');
+  const [milestoneEnabled, setMilestoneEnabled] = useState(false);
+  const [totalMilestones, setTotalMilestones] = useState('3');
   const queryClient = useQueryClient();
   const { data: startupData, isLoading } = useStartupStatus(publicKey);
   const { data: metadata, isLoading: metadataLoading } = useIPFSMetadata(startupData?.ipfs_cid);
   const { data: allVCs = [] } = useQuery({ queryKey: ['allVCs'], queryFn: getAllVCs, refetchInterval: 30000 });
+
+  // Milestone vote tally for the founder's own startup
+  const { data: voteTally = [0, 0] } = useQuery({
+    queryKey: ['milestoneTally', publicKey],
+    queryFn: () => getMilestoneVoteTally(publicKey),
+    enabled: !!startupData?.milestone_enabled,
+    refetchInterval: 15000,
+  });
 
   if (!publicKey || typeof publicKey !== 'string' || publicKey.length < 50) {
     return (
@@ -35,13 +45,20 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
   }
 
   const applyMutation = useMutation({
-    mutationFn: async (data: { name: string; desc: string; url: string; team: string; goal: string }) => {
+    mutationFn: async (data: { name: string; desc: string; url: string; team: string; goal: string; milestoneEnabled: boolean; totalMilestones: number }) => {
       const ipfsCid = await uploadToIPFS({ project_name: data.name, description: data.desc, project_url: data.url, team_info: data.team });
       const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const goalInStroops = Math.floor(parseFloat(data.goal) * 1e7);
       const transaction = new StellarSdk.TransactionBuilder(sourceAccount, { fee: StellarSdk.BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })
-        .addOperation(contract.call('apply', StellarSdk.Address.fromString(publicKey).toScVal(), StellarSdk.nativeToScVal(ipfsCid, { type: 'string' }), StellarSdk.nativeToScVal(BigInt(goalInStroops), { type: 'i128' })))
+        .addOperation(contract.call(
+          'apply',
+          StellarSdk.Address.fromString(publicKey).toScVal(),
+          StellarSdk.nativeToScVal(ipfsCid, { type: 'string' }),
+          StellarSdk.nativeToScVal(BigInt(goalInStroops), { type: 'i128' }),
+          StellarSdk.nativeToScVal(data.milestoneEnabled, { type: 'bool' }),
+          StellarSdk.nativeToScVal(data.totalMilestones, { type: 'u32' }),
+        ))
         .setTimeout(30).build();
       const prepared = await server.prepareTransaction(transaction);
       const signedXdr = await signTransaction(prepared.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
@@ -81,10 +98,32 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
     onError: () => alert('Failed to claim funds. Please try again.'),
   });
 
+  const releaseMilestoneMutation = useMutation({
+    mutationFn: async () => {
+      const sourceAccount = await getAccount(publicKey);
+      const contract = new StellarSdk.Contract(CONTRACT_ID);
+      const xlmAddress = new StellarSdk.Address(TESTNET_XLM_CONTRACT);
+      const transaction = new StellarSdk.TransactionBuilder(sourceAccount, { fee: StellarSdk.BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })
+        .addOperation(contract.call('release_milestone', StellarSdk.Address.fromString(publicKey).toScVal(), xlmAddress.toScVal()))
+        .setTimeout(30).build();
+      const prepared = await server.prepareTransaction(transaction);
+      const signedXdr = await signTransaction(prepared.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      const signedTx = StellarSdk.TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
+      const result = await server.sendTransaction(signedTx);
+      let status = await server.getTransaction(result.hash);
+      while (status.status === 'NOT_FOUND') { await new Promise(r => setTimeout(r, 1000)); status = await server.getTransaction(result.hash); }
+      if (status.status !== 'SUCCESS') throw new Error('Transaction failed');
+      return status;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['startupStatus'] }); queryClient.invalidateQueries({ queryKey: ['milestoneTally'] }); alert('Milestone released! Funds transferred to your wallet.'); },
+    onError: (e) => alert(`Failed to release milestone: ${e instanceof Error ? e.message : 'Unknown error'}`),
+  });
+
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectName.trim() || !description.trim() || !projectUrl.trim() || !teamInfo.trim() || !fundingGoal.trim()) { alert('Please fill in all fields'); return; }
-    applyMutation.mutate({ name: projectName, desc: description, url: projectUrl, team: teamInfo, goal: fundingGoal });
+    const milestones = milestoneEnabled ? Math.max(1, parseInt(totalMilestones) || 3) : 1;
+    applyMutation.mutate({ name: projectName, desc: description, url: projectUrl, team: teamInfo, goal: fundingGoal, milestoneEnabled, totalMilestones: milestones });
   };
 
   if (isLoading) {
@@ -99,6 +138,11 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
   }
 
   const availableToClaim = (Number(startupData?.unlocked_balance || 0) - Number(startupData?.claimed_balance || 0)) / 1e7;
+  const escrowedXLM = Number(startupData?.escrowed_funds || 0) / 1e7;
+  const isMilestone = startupData?.milestone_enabled;
+  const currentMilestone = Number(startupData?.current_milestone || 0);
+  const totalMilestonesCount = Number(startupData?.total_milestones || 1);
+  const allMilestonesReleased = currentMilestone >= totalMilestonesCount;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -114,12 +158,11 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
       {!startupData ? (
         <>
-          {/* How it works */}
           <div className="grid grid-cols-3 gap-px bg-black/10">
             {[
               { n: '01', title: 'Apply', body: 'Fill in your project details. Metadata is stored on IPFS — only a hash goes on-chain.' },
               { n: '02', title: 'Community votes', body: 'Your application enters a 30-day public voting window. Any Stellar wallet can vote.' },
-              { n: '03', title: 'Receive funding', body: 'Verified VCs invest directly into your startup. Claim funds to your wallet at any time.' },
+              { n: '03', title: 'Receive funding', body: 'Verified VCs invest directly. Choose direct payout or milestone-based escrow.' },
             ].map(s => (
               <div key={s.n} className="bg-white p-5">
                 <div className="text-[10px] font-bold tracking-widest text-zinc-300 mb-2">{s.n}</div>
@@ -129,11 +172,6 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
             ))}
           </div>
 
-          {!import.meta.env.VITE_PINATA_JWT && !import.meta.env.VITE_PINATA_API_KEY && (
-            <div className="p-4 border border-black/10 bg-zinc-50 text-sm text-zinc-600">
-              Demo mode: IPFS storage is simulated locally. Configure Pinata credentials for production.
-            </div>
-          )}
           <div className="card">
             <div className="text-[11px] font-bold uppercase tracking-widest mb-6">Application Form</div>
             <form onSubmit={handleApply} className="space-y-5">
@@ -157,6 +195,36 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
                 <label className="block text-[11px] font-bold uppercase tracking-widest mb-2">Funding Goal (XLM) *</label>
                 <input type="number" step="0.01" value={fundingGoal} onChange={(e) => setFundingGoal(e.target.value)} className="form-input" placeholder="10000.00" />
               </div>
+              <div className="border border-black/10 p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest">Milestone-Based Vesting</div>
+                    <p className="text-xs text-zinc-500 mt-1">Funds held in escrow and released in tranches as VCs approve milestones.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMilestoneEnabled(!milestoneEnabled)}
+                    className={`w-12 h-6 relative transition-colors ${milestoneEnabled ? 'bg-black' : 'bg-zinc-200'}`}
+                    aria-pressed={milestoneEnabled}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 bg-white transition-all ${milestoneEnabled ? 'left-7' : 'left-1'}`} />
+                  </button>
+                </div>
+                {milestoneEnabled && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest mb-2">Number of Milestones</label>
+                    <input
+                      type="number"
+                      min="2"
+                      max="10"
+                      value={totalMilestones}
+                      onChange={(e) => setTotalMilestones(e.target.value)}
+                      className="form-input w-32"
+                    />
+                    <p className="text-xs text-zinc-400 mt-1">Funds released in {totalMilestones} equal tranches after VC majority vote.</p>
+                  </div>
+                )}
+              </div>
               <button type="submit" disabled={applyMutation.isPending} className="btn btn-primary w-full py-3">
                 {applyMutation.isPending ? 'Uploading to IPFS & Submitting...' : 'Submit Application'}
               </button>
@@ -171,9 +239,12 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Status</div>
                 <h3 className="text-2xl font-bold tracking-tight">{startupData.approved ? 'Approved' : 'Under Review'}</h3>
               </div>
-              <span className={`badge ${startupData.approved ? 'badge-success' : 'badge-warning'}`}>
-                {startupData.approved ? 'Approved' : 'Pending'}
-              </span>
+              <div className="flex gap-2 flex-wrap justify-end">
+                <span className={`badge ${startupData.approved ? 'badge-success' : 'badge-warning'}`}>
+                  {startupData.approved ? 'Approved' : 'Pending'}
+                </span>
+                {isMilestone && <span className="badge badge-primary">Milestone Vesting</span>}
+              </div>
             </div>
             {metadataLoading ? (
               <div className="animate-pulse space-y-3"><div className="h-4 bg-zinc-100 rounded w-3/4"></div><div className="h-4 bg-zinc-100 rounded w-full"></div></div>
@@ -228,7 +299,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: 'Total Allocated', value: (Number(startupData.total_allocated) / 1e7).toFixed(2) },
-              { label: 'Unlocked', value: (Number(startupData.unlocked_balance) / 1e7).toFixed(2) },
+              { label: isMilestone ? 'In Escrow' : 'Unlocked', value: isMilestone ? escrowedXLM.toFixed(2) : (Number(startupData.unlocked_balance) / 1e7).toFixed(2) },
               { label: 'Claimed', value: (Number(startupData.claimed_balance) / 1e7).toFixed(2) },
             ].map((item) => (
               <div key={item.label} className="card">
@@ -238,38 +309,98 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
             ))}
           </div>
 
-          <div className="card">
-            <div className="text-[11px] font-bold uppercase tracking-widest mb-4">Claim Funds</div>
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Available to Claim</div>
-              <div className="text-2xl font-bold">{availableToClaim.toFixed(2)} XLM</div>
-            </div>
-            <button
-              onClick={() => claimMutation.mutate()}
-              disabled={claimMutation.isPending || availableToClaim <= 0}
-              className="btn btn-primary w-full py-3"
-            >
-              {claimMutation.isPending ? 'Processing...' : availableToClaim <= 0 ? 'No Funds Available' : 'Claim Funds'}
-            </button>
-            {availableToClaim <= 0 && (
-              <div className="mt-4 p-4 border border-black/10 bg-zinc-50 text-sm text-zinc-600 space-y-1">
-                <div className="font-bold text-black text-[11px] uppercase tracking-widest mb-2">How to Get Funds</div>
-                <div>1. Your application is approved</div>
-                <div>2. VCs need to invest through the VC dashboard</div>
-                <div>3. Once invested, funds appear here to claim</div>
-                <div className="pt-2 border-t border-black/5">
-                  VCs in system: <span className="font-bold">{allVCs.length > 0 ? `${allVCs.length} verified` : 'None yet'}</span>
+          {isMilestone ? (
+            <div className="card">
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-4">Milestone Vesting</div>
+              <div className="mb-4">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">
+                  <span>Progress</span>
+                  <span>{currentMilestone} / {totalMilestonesCount} released</span>
                 </div>
-                <div className="pt-2 font-mono text-xs break-all text-zinc-400">Your address: {publicKey}</div>
-                <button
-                  onClick={() => { const event = new CustomEvent('navigate-to-vc'); window.dispatchEvent(event); }}
-                  className="btn btn-outline w-full mt-2 py-2 text-xs"
-                >
-                  Become a VC & Invest
-                </button>
+                <div className="h-2 w-full bg-zinc-100">
+                  <div
+                    className="h-2 bg-black transition-all"
+                    style={{ width: `${totalMilestonesCount > 0 ? (currentMilestone / totalMilestonesCount) * 100 : 0}%` }}
+                  />
+                </div>
               </div>
-            )}
-          </div>
+              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Current Milestone</div>
+                  <div className="font-bold">{allMilestonesReleased ? 'Complete' : `#${currentMilestone + 1}`}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Escrowed</div>
+                  <div className="font-bold">{escrowedXLM.toFixed(2)} XLM</div>
+                </div>
+              </div>
+              {!allMilestonesReleased ? (
+                <>
+                  {(() => {
+                    const [approveCount, totalInvestors] = voteTally as [number, number];
+                    const majorityReached = totalInvestors > 0 && approveCount * 2 > totalInvestors;
+                    return (
+                      <>
+                        <div className="p-4 border border-black/10 bg-zinc-50 mb-4">
+                          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">VC Votes for Milestone #{currentMilestone + 1}</div>
+                          <div className="flex justify-between text-sm mb-2">
+                            <span>{approveCount} approved · {totalInvestors - approveCount} rejected</span>
+                            <span className="font-bold">{totalInvestors > 0 ? `${approveCount} / ${totalInvestors}` : 'No investors yet'}</span>
+                          </div>
+                          <div className="h-1 w-full bg-zinc-100">
+                            <div className="h-1 bg-black transition-all" style={{ width: `${totalInvestors > 0 ? (approveCount / totalInvestors) * 100 : 0}%` }} />
+                          </div>
+                          {!majorityReached && totalInvestors > 0 && (
+                            <p className="text-xs text-zinc-500 mt-2">Need majority ({Math.ceil(totalInvestors / 2) + (totalInvestors % 2 === 0 ? 1 : 0)} votes) to release.</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => releaseMilestoneMutation.mutate()}
+                          disabled={releaseMilestoneMutation.isPending || escrowedXLM <= 0 || !majorityReached}
+                          className="btn btn-primary w-full py-3"
+                        >
+                          {releaseMilestoneMutation.isPending
+                            ? 'Processing...'
+                            : !majorityReached
+                            ? 'Waiting for VC majority vote'
+                            : `Release Milestone #${currentMilestone + 1}`}
+                        </button>
+                      </>
+                    );
+                  })()}
+                </>
+              ) : (
+                <div className="p-4 border border-black/10 bg-zinc-50 text-sm text-zinc-600 text-center">
+                  All milestones released. Funding complete.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="card">
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-4">Claim Funds</div>
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Available to Claim</div>
+                <div className="text-2xl font-bold">{availableToClaim.toFixed(2)} XLM</div>
+              </div>
+              <button
+                onClick={() => claimMutation.mutate()}
+                disabled={claimMutation.isPending || availableToClaim <= 0}
+                className="btn btn-primary w-full py-3"
+              >
+                {claimMutation.isPending ? 'Processing...' : availableToClaim <= 0 ? 'No Funds Available' : 'Claim Funds'}
+              </button>
+              {availableToClaim <= 0 && (
+                <div className="mt-4 p-4 border border-black/10 bg-zinc-50 text-sm text-zinc-600 space-y-1">
+                  <div className="font-bold text-black text-[11px] uppercase tracking-widest mb-2">How to Get Funds</div>
+                  <div>1. VCs need to invest through the VC dashboard</div>
+                  <div>2. Once invested, funds appear here to claim</div>
+                  <div className="pt-2 border-t border-black/5">
+                    VCs in system: <span className="font-bold">{allVCs.length > 0 ? `${allVCs.length} verified` : 'None yet'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

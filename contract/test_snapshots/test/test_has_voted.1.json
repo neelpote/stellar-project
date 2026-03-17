@@ -94,6 +94,12 @@
                     "hi": 0,
                     "lo": 100000000000
                   }
+                },
+                {
+                  "bool": false
+                },
+                {
+                  "u32": 1
                 }
               ]
             }
@@ -418,6 +424,25 @@
                             },
                             {
                               "key": {
+                                "symbol": "current_milestone"
+                              },
+                              "val": {
+                                "u32": 0
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "escrowed_funds"
+                              },
+                              "val": {
+                                "i128": {
+                                  "hi": 0,
+                                  "lo": 0
+                                }
+                              }
+                            },
+                            {
+                              "key": {
                                 "symbol": "exists"
                               },
                               "val": {
@@ -445,6 +470,14 @@
                             },
                             {
                               "key": {
+                                "symbol": "milestone_enabled"
+                              },
+                              "val": {
+                                "bool": false
+                              }
+                            },
+                            {
+                              "key": {
                                 "symbol": "no_votes"
                               },
                               "val": {
@@ -460,6 +493,14 @@
                                   "hi": 0,
                                   "lo": 0
                                 }
+                              }
+                            },
+                            {
+                              "key": {
+                                "symbol": "total_milestones"
+                              },
+                              "val": {
+                                "u32": 1
                               }
                             },
                             {
@@ -1203,6 +1244,12 @@
                     "hi": 0,
                     "lo": 100000000000
                   }
+                },
+                {
+                  "bool": false
+                },
+                {
+                  "u32": 1
                 }
               ]
             }

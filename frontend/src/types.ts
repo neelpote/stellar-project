@@ -4,13 +4,18 @@ export interface StartupData {
   total_allocated: string;
   unlocked_balance: string;
   claimed_balance: string;
-  voting_end_time: number | bigint; // Can be BigInt from blockchain
-  yes_votes: number | bigint; // Can be BigInt from blockchain
-  no_votes: number | bigint; // Can be BigInt from blockchain
+  voting_end_time: number | bigint;
+  yes_votes: number | bigint;
+  no_votes: number | bigint;
   approved: boolean;
+  exists: boolean;
+  // milestone vesting
+  milestone_enabled: boolean;
+  total_milestones: number;
+  current_milestone: number;
+  escrowed_funds: string;
 }
 
-// Metadata stored in IPFS
 export interface ProjectMetadata {
   project_name: string;
   description: string;
@@ -19,7 +24,6 @@ export interface ProjectMetadata {
   timestamp: number;
 }
 
-// Combined data for UI (on-chain + IPFS)
 export interface StartupWithMetadata extends StartupData {
   metadata?: ProjectMetadata;
   metadataLoading?: boolean;
@@ -31,6 +35,7 @@ export interface VCData {
   company_name: string;
   stake_amount: string;
   total_invested: string;
+  exists: boolean;
 }
 
 export interface WalletState {
