@@ -5,6 +5,7 @@ import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE } from '../config';
 import { server, getStartupStatus, getAccount } from '../stellar';
 import { verifyAdmin, EXPECTED_ADMIN } from '../adminTest';
+import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 
 interface AdminViewProps {
   publicKey: string;
@@ -30,6 +31,8 @@ export const AdminView = ({ publicKey }: AdminViewProps) => {
     queryFn: () => reviewAddress ? getStartupStatus(reviewAddress) : null,
     enabled: !!reviewAddress,
   });
+
+  const { data: reviewMetadata } = useIPFSMetadata(reviewData?.ipfs_cid);
 
   const approveApplicationMutation = useMutation({
     mutationFn: async (founder: string) => {
@@ -112,21 +115,23 @@ export const AdminView = ({ publicKey }: AdminViewProps) => {
           <div className="space-y-3 text-sm border-t border-black/5 pt-4">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Project Name</div>
-              <div className="font-bold text-lg">{reviewData.project_name}</div>
+              <div className="font-bold text-lg">{reviewMetadata?.project_name || 'Loading...'}</div>
             </div>
             <div className="pt-3 border-t border-black/5">
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Description</div>
-              <p className="text-zinc-700">{reviewData.description}</p>
+              <p className="text-zinc-700">{reviewMetadata?.description || '—'}</p>
             </div>
             <div className="pt-3 border-t border-black/5">
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Project URL</div>
-              <a href={reviewData.project_url} target="_blank" rel="noopener noreferrer" className="underline font-medium">
-                {reviewData.project_url} →
-              </a>
+              {reviewMetadata?.project_url ? (
+                <a href={reviewMetadata.project_url} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                  {reviewMetadata.project_url} →
+                </a>
+              ) : <span className="text-zinc-400">—</span>}
             </div>
             <div className="pt-3 border-t border-black/5">
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Team</div>
-              <p className="text-zinc-700">{reviewData.team_info}</p>
+              <p className="text-zinc-700">{reviewMetadata?.team_info || '—'}</p>
             </div>
             <div className="pt-3 border-t border-black/5">
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Funding Goal</div>

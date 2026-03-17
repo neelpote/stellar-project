@@ -46,7 +46,7 @@ function AppContent() {
           .addOperation(contract.call('is_vc', StellarSdk.Address.fromString(wallet.publicKey).toScVal()))
           .setTimeout(30).build();
         const simulated = await server.simulateTransaction(transaction);
-        if (StellarSdk.SorobanRpc.Api.isSimulationSuccess(simulated)) {
+        if (StellarSdk.rpc.Api.isSimulationSuccess(simulated)) {
           const result = simulated.result?.retval;
           if (result) return StellarSdk.scValToNative(result);
         }

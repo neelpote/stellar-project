@@ -1,15 +1,17 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, token, Address, Env, String,
+    contract, contractimpl, contracttype, token, Address, Env, String, Vec,
 };
 
 mod test;
 
+// ─── Data Types ───────────────────────────────────────────────────────────────
+
 #[derive(Clone)]
 #[contracttype]
 pub struct StartupData {
-    pub ipfs_cid: String,           // IPFS CID containing all metadata
+    pub ipfs_cid: String,
     pub funding_goal: i128,
     pub total_allocated: i128,
     pub unlocked_balance: i128,
@@ -18,6 +20,7 @@ pub struct StartupData {
     pub yes_votes: u32,
     pub no_votes: u32,
     pub approved: bool,
+    pub exists: bool, // replaces Option<T> — always return a struct
 }
 
 #[derive(Clone)]
@@ -27,56 +30,47 @@ pub struct VCData {
     pub company_name: String,
     pub stake_amount: i128,
     pub total_invested: i128,
+    pub exists: bool, // replaces Option<T>
 }
 
 #[contracttype]
 pub enum DataKey {
     Admin,
-    ApplicationFee,
-    VCStakeRequired, // Minimum stake to become VC
+    VCStakeRequired,
     Startup(Address),
     VCData(Address),
-    Vote(Address, Address), // (voter_address, founder_address)
+    Vote(Address, Address),
     AllStartups,
     AllVCs,
-    Investment(Address, Address), // (vc_address, founder_address) -> amount invested
 }
 
+// ─── Contract ─────────────────────────────────────────────────────────────────
+
 #[contract]
-pub struct DeCoMVP;
+pub struct DeCo;
 
 #[contractimpl]
-impl DeCoMVP {
-    /// Initialize the contract with admin address, application fee, and VC stake requirement
-    pub fn init(env: Env, admin: Address, fee: i128, vc_stake_required: i128) {
+impl DeCo {
+    /// Initialize contract
+    pub fn init(env: Env, admin: Address, vc_stake_required: i128) {
         if env.storage().instance().has(&DataKey::Admin) {
-            panic!("Contract already initialized");
+            panic!("already initialized");
         }
-        
         env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::ApplicationFee, &fee);
         env.storage().instance().set(&DataKey::VCStakeRequired, &vc_stake_required);
     }
 
-    /// Founder applies by submitting IPFS CID containing project metadata
-    pub fn apply(
-        env: Env,
-        founder: Address,
-        ipfs_cid: String,
-        funding_goal: i128,
-    ) {
+    /// Founder applies with IPFS CID
+    pub fn apply(env: Env, founder: Address, ipfs_cid: String, funding_goal: i128) {
         founder.require_auth();
 
-        // Check if already applied
         if env.storage().instance().has(&DataKey::Startup(founder.clone())) {
-            panic!("Already applied");
+            panic!("already applied");
         }
 
-        // Set voting period to 7 days (in seconds)
         let voting_end_time = env.ledger().timestamp() + (7 * 24 * 60 * 60);
 
-        // Create startup entry with voting enabled
-        let startup_data = StartupData {
+        let data = StartupData {
             ipfs_cid,
             funding_goal,
             total_allocated: 0,
@@ -86,302 +80,212 @@ impl DeCoMVP {
             yes_votes: 0,
             no_votes: 0,
             approved: false,
+            exists: true,
         };
 
-        env.storage()
-            .instance()
-            .set(&DataKey::Startup(founder.clone()), &startup_data);
+        env.storage().instance().set(&DataKey::Startup(founder.clone()), &data);
 
-        // Add to all startups list
-        let mut all_startups: soroban_sdk::Vec<Address> = env
-            .storage()
-            .instance()
+        let mut all: Vec<Address> = env.storage().instance()
             .get(&DataKey::AllStartups)
-            .unwrap_or(soroban_sdk::Vec::new(&env));
-        
-        all_startups.push_back(founder);
-        env.storage().instance().set(&DataKey::AllStartups, &all_startups);
+            .unwrap_or(Vec::new(&env));
+        all.push_back(founder);
+        env.storage().instance().set(&DataKey::AllStartups, &all);
     }
 
-    /// Get all startup addresses
-    pub fn get_all_startups(env: Env) -> soroban_sdk::Vec<Address> {
-        env.storage()
-            .instance()
-            .get(&DataKey::AllStartups)
-            .unwrap_or(soroban_sdk::Vec::new(&env))
-    }
-
-    /// Public voting on startup applications
+    /// Community vote
     pub fn vote(env: Env, voter: Address, founder: Address, vote_yes: bool) {
         voter.require_auth();
 
-        // Check if startup exists
-        let mut startup_data: StartupData = env
-            .storage()
-            .instance()
+        let mut data: StartupData = env.storage().instance()
             .get(&DataKey::Startup(founder.clone()))
-            .expect("Startup not found");
+            .expect("startup not found");
 
-        // Check if voting period is still active
-        if env.ledger().timestamp() > startup_data.voting_end_time {
-            panic!("Voting period has ended");
+        if env.ledger().timestamp() > data.voting_end_time {
+            panic!("voting ended");
         }
 
-        // Check if already voted
         let vote_key = DataKey::Vote(voter.clone(), founder.clone());
         if env.storage().instance().has(&vote_key) {
-            panic!("Already voted");
+            panic!("already voted");
         }
 
-        // Record vote
         env.storage().instance().set(&vote_key, &vote_yes);
 
-        // Update vote counts
-        if vote_yes {
-            startup_data.yes_votes += 1;
-        } else {
-            startup_data.no_votes += 1;
-        }
+        if vote_yes { data.yes_votes += 1; } else { data.no_votes += 1; }
 
-        env.storage()
-            .instance()
-            .set(&DataKey::Startup(founder), &startup_data);
+        env.storage().instance().set(&DataKey::Startup(founder), &data);
     }
 
-    /// Admin approves application after reviewing votes
+    /// Admin approves startup
     pub fn approve_application(env: Env, admin: Address, founder: Address) {
         admin.require_auth();
 
-        let stored_admin: Address = env
-            .storage()
-            .instance()
+        let stored_admin: Address = env.storage().instance()
             .get(&DataKey::Admin)
-            .expect("Admin not set");
-        
+            .expect("admin not set");
+
         if admin != stored_admin {
-            panic!("Unauthorized: not admin");
+            panic!("not admin");
         }
 
-        let mut startup_data: StartupData = env
-            .storage()
-            .instance()
+        let mut data: StartupData = env.storage().instance()
             .get(&DataKey::Startup(founder.clone()))
-            .expect("Startup not found");
+            .expect("startup not found");
 
-        startup_data.approved = true;
-
-        env.storage()
-            .instance()
-            .set(&DataKey::Startup(founder), &startup_data);
+        data.approved = true;
+        env.storage().instance().set(&DataKey::Startup(founder), &data);
     }
 
-    /// Check if voter has voted for a startup
-    pub fn has_voted(env: Env, voter: Address, founder: Address) -> bool {
-        let vote_key = DataKey::Vote(voter, founder);
-        env.storage().instance().has(&vote_key)
+    /// VC stakes to become verified
+    pub fn stake_to_become_vc(env: Env, vc: Address, company_name: String, xlm_token: Address) {
+        vc.require_auth();
+
+        if env.storage().instance().has(&DataKey::VCData(vc.clone())) {
+            panic!("already a vc");
+        }
+
+        let stake_required: i128 = env.storage().instance()
+            .get(&DataKey::VCStakeRequired)
+            .expect("stake not set");
+
+        token::Client::new(&env, &xlm_token)
+            .transfer(&vc, &env.current_contract_address(), &stake_required);
+
+        let data = VCData {
+            vc_address: vc.clone(),
+            company_name,
+            stake_amount: stake_required,
+            total_invested: 0,
+            exists: true,
+        };
+
+        env.storage().instance().set(&DataKey::VCData(vc.clone()), &data);
+
+        let mut all: Vec<Address> = env.storage().instance()
+            .get(&DataKey::AllVCs)
+            .unwrap_or(Vec::new(&env));
+        all.push_back(vc);
+        env.storage().instance().set(&DataKey::AllVCs, &all);
     }
 
-    /// VC stakes tokens to become verified (fully decentralized)
-    pub fn stake_to_become_vc(env: Env, vc_address: Address, company_name: String, xlm_token: Address) {
-            vc_address.require_auth();
+    /// VC invests in approved startup
+    pub fn vc_invest(env: Env, vc: Address, founder: Address, amount: i128, xlm_token: Address) {
+        vc.require_auth();
 
-            // Check if already a VC
-            if env.storage().instance().has(&DataKey::VCData(vc_address.clone())) {
-                panic!("Already a VC");
-            }
-
-            let stake_required: i128 = env
-                .storage()
-                .instance()
-                .get(&DataKey::VCStakeRequired)
-                .expect("VC stake not set");
-
-            // Transfer XLM from VC to contract
-            let token_client = token::Client::new(&env, &xlm_token);
-            token_client.transfer(&vc_address, &env.current_contract_address(), &stake_required);
-
-            // Create VC entry
-            let vc_data = VCData {
-                vc_address: vc_address.clone(),
-                company_name,
-                stake_amount: stake_required,
-                total_invested: 0,
-            };
-
-            env.storage()
-                .instance()
-                .set(&DataKey::VCData(vc_address.clone()), &vc_data);
-
-            // Add to all VCs list
-            let mut all_vcs: soroban_sdk::Vec<Address> = env
-                .storage()
-                .instance()
-                .get(&DataKey::AllVCs)
-                .unwrap_or(soroban_sdk::Vec::new(&env));
-
-            all_vcs.push_back(vc_address);
-            env.storage().instance().set(&DataKey::AllVCs, &all_vcs);
+        if !env.storage().instance().has(&DataKey::VCData(vc.clone())) {
+            panic!("not a verified vc");
         }
 
-    /// VC invests in approved startup (fully decentralized)
-    pub fn vc_invest(env: Env, vc_address: Address, founder: Address, amount: i128, xlm_token: Address) {
-            vc_address.require_auth();
+        let mut startup: StartupData = env.storage().instance()
+            .get(&DataKey::Startup(founder.clone()))
+            .expect("startup not found");
 
-            // Check if VC is verified
-            if !env.storage().instance().has(&DataKey::VCData(vc_address.clone())) {
-                panic!("Not a verified VC - stake tokens first");
-            }
-
-            // Check if startup is approved
-            let mut startup_data: StartupData = env
-                .storage()
-                .instance()
-                .get(&DataKey::Startup(founder.clone()))
-                .expect("Startup not found");
-
-            if !startup_data.approved {
-                panic!("Startup not approved yet");
-            }
-
-            // Transfer XLM investment from VC to contract
-            let token_client = token::Client::new(&env, &xlm_token);
-            token_client.transfer(&vc_address, &env.current_contract_address(), &amount);
-
-            // Update startup funding
-            startup_data.total_allocated += amount;
-            startup_data.unlocked_balance += amount; // Immediately available for claiming
-
-            env.storage()
-                .instance()
-                .set(&DataKey::Startup(founder.clone()), &startup_data);
-
-            // Update VC investment tracking
-            let mut vc_data: VCData = env
-                .storage()
-                .instance()
-                .get(&DataKey::VCData(vc_address.clone()))
-                .expect("VC data not found");
-
-            vc_data.total_invested += amount;
-            env.storage()
-                .instance()
-                .set(&DataKey::VCData(vc_address.clone()), &vc_data);
-
-            // Track individual investment
-            let investment_key = DataKey::Investment(vc_address.clone(), founder.clone());
-            let current_investment: i128 = env
-                .storage()
-                .instance()
-                .get(&investment_key)
-                .unwrap_or(0);
-
-            env.storage()
-                .instance()
-                .set(&investment_key, &(current_investment + amount));
+        if !startup.approved {
+            panic!("startup not approved");
         }
 
-    /// VC withdraws stake (can only withdraw if no active investments)
-    pub fn withdraw_vc_stake(env: Env, vc_address: Address, xlm_token: Address) {
-            vc_address.require_auth();
+        token::Client::new(&env, &xlm_token)
+            .transfer(&vc, &env.current_contract_address(), &amount);
 
-            let vc_data: VCData = env
-                .storage()
-                .instance()
-                .get(&DataKey::VCData(vc_address.clone()))
-                .expect("Not a VC");
+        startup.total_allocated += amount;
+        startup.unlocked_balance += amount;
+        env.storage().instance().set(&DataKey::Startup(founder.clone()), &startup);
 
-            // For simplicity, allow withdrawal anytime (in production, add more checks)
-            let token_client = token::Client::new(&env, &xlm_token);
-            token_client.transfer(&env.current_contract_address(), &vc_address, &vc_data.stake_amount);
+        let mut vc_data: VCData = env.storage().instance()
+            .get(&DataKey::VCData(vc.clone()))
+            .expect("vc not found");
+        vc_data.total_invested += amount;
+        env.storage().instance().set(&DataKey::VCData(vc), &vc_data);
+    }
 
-            // Remove VC data
-            env.storage().instance().remove(&DataKey::VCData(vc_address));
-        }
-
-    /// Founder claims their unlocked funds
+    /// Founder claims funds
     pub fn claim_funds(env: Env, founder: Address, xlm_token: Address) {
-            founder.require_auth();
+        founder.require_auth();
 
-            let mut startup_data: StartupData = env
-                .storage()
-                .instance()
-                .get(&DataKey::Startup(founder.clone()))
-                .expect("Startup not found");
+        let mut data: StartupData = env.storage().instance()
+            .get(&DataKey::Startup(founder.clone()))
+            .expect("startup not found");
 
-            let claimable = startup_data.unlocked_balance - startup_data.claimed_balance;
-
-            if claimable <= 0 {
-                panic!("No funds to claim");
-            }
-
-            // Transfer XLM from contract to founder
-            let token_client = token::Client::new(&env, &xlm_token);
-            token_client.transfer(&env.current_contract_address(), &founder, &claimable);
-
-            startup_data.claimed_balance += claimable;
-
-            env.storage()
-                .instance()
-                .set(&DataKey::Startup(founder), &startup_data);
+        let claimable = data.unlocked_balance - data.claimed_balance;
+        if claimable <= 0 {
+            panic!("no funds to claim");
         }
 
-    /// Get startup status (read-only)
-    pub fn get_startup_status(env: Env, founder: Address) -> Option<StartupData> {
-        env.storage()
-            .instance()
+        token::Client::new(&env, &xlm_token)
+            .transfer(&env.current_contract_address(), &founder, &claimable);
+
+        data.claimed_balance += claimable;
+        env.storage().instance().set(&DataKey::Startup(founder), &data);
+    }
+
+    // ─── Read functions — NO Option<T>, always return concrete types ──────────
+
+    /// Returns startup data. Check `exists` field to know if it was found.
+    pub fn get_startup_status(env: Env, founder: Address) -> StartupData {
+        env.storage().instance()
             .get(&DataKey::Startup(founder))
+            .unwrap_or(StartupData {
+                ipfs_cid: String::from_str(&env, ""),
+                funding_goal: 0,
+                total_allocated: 0,
+                unlocked_balance: 0,
+                claimed_balance: 0,
+                voting_end_time: 0,
+                yes_votes: 0,
+                no_votes: 0,
+                approved: false,
+                exists: false,
+            })
     }
 
-    /// Get admin address (read-only)
+    /// Returns admin address
     pub fn get_admin(env: Env) -> Address {
-        env.storage()
-            .instance()
+        env.storage().instance()
             .get(&DataKey::Admin)
-            .expect("Admin not set")
+            .expect("admin not set")
     }
 
-    /// Get application fee (read-only)
-    pub fn get_fee(env: Env) -> i128 {
-        env.storage()
-            .instance()
-            .get(&DataKey::ApplicationFee)
-            .expect("Fee not set")
+    /// Returns all startup addresses
+    pub fn get_all_startups(env: Env) -> Vec<Address> {
+        env.storage().instance()
+            .get(&DataKey::AllStartups)
+            .unwrap_or(Vec::new(&env))
+    }
+
+    /// Returns VC data. Check `exists` field.
+    pub fn get_vc_data(env: Env, vc: Address) -> VCData {
+        env.storage().instance()
+            .get(&DataKey::VCData(vc.clone()))
+            .unwrap_or(VCData {
+                vc_address: vc,
+                company_name: String::from_str(&env, ""),
+                stake_amount: 0,
+                total_invested: 0,
+                exists: false,
+            })
+    }
+
+    /// Returns all VC addresses
+    pub fn get_all_vcs(env: Env) -> Vec<Address> {
+        env.storage().instance()
+            .get(&DataKey::AllVCs)
+            .unwrap_or(Vec::new(&env))
+    }
+
+    /// Returns required VC stake
+    pub fn get_vc_stake_required(env: Env) -> i128 {
+        env.storage().instance()
+            .get(&DataKey::VCStakeRequired)
+            .expect("stake not set")
+    }
+
+    /// Check if address has voted for a startup
+    pub fn has_voted(env: Env, voter: Address, founder: Address) -> bool {
+        env.storage().instance().has(&DataKey::Vote(voter, founder))
     }
 
     /// Check if address is a verified VC
-    pub fn is_vc(env: Env, vc_address: Address) -> bool {
-        env.storage().instance().has(&DataKey::VCData(vc_address))
-    }
-
-    /// Get VC data
-    pub fn get_vc_data(env: Env, vc_address: Address) -> Option<VCData> {
-        env.storage()
-            .instance()
-            .get(&DataKey::VCData(vc_address))
-    }
-
-    /// Get all VCs
-    pub fn get_all_vcs(env: Env) -> soroban_sdk::Vec<Address> {
-        env.storage()
-            .instance()
-            .get(&DataKey::AllVCs)
-            .unwrap_or(soroban_sdk::Vec::new(&env))
-    }
-
-    /// Get VC's investment in a specific startup
-    pub fn get_vc_investment(env: Env, vc_address: Address, founder: Address) -> i128 {
-        let investment_key = DataKey::Investment(vc_address, founder);
-        env.storage()
-            .instance()
-            .get(&investment_key)
-            .unwrap_or(0)
-    }
-
-    /// Get required VC stake amount
-    pub fn get_vc_stake_required(env: Env) -> i128 {
-        env.storage()
-            .instance()
-            .get(&DataKey::VCStakeRequired)
-            .expect("VC stake not set")
+    pub fn is_vc(env: Env, vc: Address) -> bool {
+        env.storage().instance().has(&DataKey::VCData(vc))
     }
 }

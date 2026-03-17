@@ -1,80 +1,43 @@
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { CONTRACT_ID, SOROBAN_RPC_URL, NETWORK_PASSPHRASE, HORIZON_URL } from './config';
 
-// Use Horizon for getAccount (stable, no XDR parsing issues)
-const horizonServer = new StellarSdk.Horizon.Server(HORIZON_URL);
+// Horizon for account loading (stable JSON API)
+const horizon = new StellarSdk.Horizon.Server(HORIZON_URL);
 
-// Keep SorobanRpc server only for sendTransaction / getTransaction (write ops)
-export const server = new StellarSdk.SorobanRpc.Server(SOROBAN_RPC_URL);
+// Soroban RPC for write ops (prepareTransaction, sendTransaction, getTransaction)
+export const server = new StellarSdk.rpc.Server(SOROBAN_RPC_URL);
 
-const DUMMY = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
-let _rpcId = 1;
-
-// ─── Get account via Horizon (avoids Soroban XDR parsing bug) ────────────────
-const getAccount = async (address: string): Promise<StellarSdk.Account> => {
-  const acc = await horizonServer.loadAccount(address);
+// ─── Account helper ───────────────────────────────────────────────────────────
+export const getAccount = async (address: string): Promise<StellarSdk.Account> => {
+  const acc = await horizon.loadAccount(address);
   return new StellarSdk.Account(acc.accountId(), acc.sequenceNumber());
 };
 
-// ─── Raw JSON-RPC simulate (bypasses SDK XDR parser entirely) ────────────────
-const rpcSimulate = async (txXdr: string): Promise<string | null> => {
-  try {
-    const res = await fetch(SOROBAN_RPC_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: _rpcId++,
-        method: 'simulateTransaction',
-        params: { transaction: txXdr },
-      }),
-    });
-    const json = await res.json();
-    return json?.result?.results?.[0]?.xdr ?? null;
-  } catch {
-    return null;
-  }
+// ─── Simulate via raw JSON-RPC (most reliable, no SDK parsing issues) ─────────
+const DUMMY = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
+let _id = 1;
+
+const simulate = async (txXdr: string): Promise<any> => {
+  const res = await fetch(SOROBAN_RPC_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: _id++,
+      method: 'simulateTransaction',
+      params: { transaction: txXdr },
+    }),
+  });
+  const json = await res.json();
+  const xdr = json?.result?.results?.[0]?.xdr;
+  if (!xdr) return null;
+  // SDK v14 scValToNative handles structs correctly
+  const scVal = StellarSdk.xdr.ScVal.fromXDR(xdr, 'base64');
+  return StellarSdk.scValToNative(scVal);
 };
 
-// ─── Decode raw base64 XDR ScVal safely ──────────────────────────────────────
-const decodeScVal = (xdrB64: string): any => {
-  try {
-    const scVal = StellarSdk.xdr.ScVal.fromXDR(xdrB64, 'base64');
-    return unwrapAndConvert(scVal);
-  } catch {
-    return null;
-  }
-};
-
-// Unwrap Option<T>: Some(x) → convert(x), None → null
-const unwrapAndConvert = (scVal: StellarSdk.xdr.ScVal): any => {
-  const type = scVal.switch().name;
-
-  if (type === 'scvVoid') return null;
-
-  if (type === 'scvMap') {
-    const entries = scVal.map() ?? [];
-    if (entries.length === 0) return null;
-
-    const firstKey = entries[0].key();
-    if (firstKey.switch().name === 'scvSymbol') {
-      const sym = firstKey.sym().toString();
-      if (sym === 'None') return null;
-      if (sym === 'Some') {
-        // unwrap the inner value
-        try { return StellarSdk.scValToNative(entries[0].val()); } catch { return null; }
-      }
-    }
-    // Regular struct map — convert directly
-    try { return StellarSdk.scValToNative(scVal); } catch { return null; }
-  }
-
-  try { return StellarSdk.scValToNative(scVal); } catch { return null; }
-};
-
-// ─── Build simulation tx XDR ─────────────────────────────────────────────────
-const buildTxXdr = async (sourceAddress: string, op: StellarSdk.xdr.Operation): Promise<string> => {
-  const account = await getAccount(sourceAddress);
+const buildTx = async (source: string, op: StellarSdk.xdr.Operation): Promise<string> => {
+  const account = await getAccount(source);
   return new StellarSdk.TransactionBuilder(account, {
     fee: '100',
     networkPassphrase: NETWORK_PASSPHRASE,
@@ -85,60 +48,55 @@ const buildTxXdr = async (sourceAddress: string, op: StellarSdk.xdr.Operation): 
     .toXDR();
 };
 
-// ─── Public read functions ────────────────────────────────────────────────────
+// ─── Read functions ───────────────────────────────────────────────────────────
 
 export const getStartupStatus = async (founderAddress: string) => {
   try {
     if (!founderAddress) return null;
-    try { StellarSdk.StrKey.decodeEd25519PublicKey(founderAddress); } catch { return null; }
+    StellarSdk.StrKey.decodeEd25519PublicKey(founderAddress); // throws if invalid
 
     const contract = new StellarSdk.Contract(CONTRACT_ID);
-    const txXdr = await buildTxXdr(
+    const txXdr = await buildTx(
       founderAddress,
       contract.call('get_startup_status', StellarSdk.Address.fromString(founderAddress).toScVal())
     );
-    const xdr = await rpcSimulate(txXdr);
-    if (!xdr) return null;
-    return decodeScVal(xdr);
+    const result = await simulate(txXdr);
+    // Contract returns exists:false when not found
+    if (!result || result.exists === false) return null;
+    return result;
   } catch (error) {
     console.error('Error fetching startup status:', error);
     return null;
   }
 };
 
-export const getAdmin = async () => {
+export const getAdmin = async (): Promise<string | null> => {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
-    const txXdr = await buildTxXdr(DUMMY, contract.call('get_admin'));
-    const xdr = await rpcSimulate(txXdr);
-    if (!xdr) return null;
-    return decodeScVal(xdr);
+    const txXdr = await buildTx(DUMMY, contract.call('get_admin'));
+    return await simulate(txXdr);
   } catch (error) {
     console.error('Error fetching admin:', error);
     return null;
   }
 };
 
-export const getAllStartups = async () => {
+export const getAllStartups = async (): Promise<string[]> => {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
-    const txXdr = await buildTxXdr(DUMMY, contract.call('get_all_startups'));
-    const xdr = await rpcSimulate(txXdr);
-    if (!xdr) return [];
-    return decodeScVal(xdr) ?? [];
+    const txXdr = await buildTx(DUMMY, contract.call('get_all_startups'));
+    return (await simulate(txXdr)) ?? [];
   } catch (error) {
     console.error('Error fetching all startups:', error);
     return [];
   }
 };
 
-export const getVCStakeRequired = async () => {
+export const getVCStakeRequired = async (): Promise<string> => {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
-    const txXdr = await buildTxXdr(DUMMY, contract.call('get_vc_stake_required'));
-    const xdr = await rpcSimulate(txXdr);
-    if (!xdr) return '0';
-    return decodeScVal(xdr) ?? '0';
+    const txXdr = await buildTx(DUMMY, contract.call('get_vc_stake_required'));
+    return (await simulate(txXdr))?.toString() ?? '0';
   } catch (error) {
     console.error('Error fetching VC stake required:', error);
     return '0';
@@ -148,31 +106,26 @@ export const getVCStakeRequired = async () => {
 export const getVCData = async (vcAddress: string) => {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
-    const txXdr = await buildTxXdr(
+    const txXdr = await buildTx(
       DUMMY,
       contract.call('get_vc_data', StellarSdk.Address.fromString(vcAddress).toScVal())
     );
-    const xdr = await rpcSimulate(txXdr);
-    if (!xdr) return null;
-    return decodeScVal(xdr);
+    const result = await simulate(txXdr);
+    if (!result || result.exists === false) return null;
+    return result;
   } catch (error) {
     console.error('Error fetching VC data:', error);
     return null;
   }
 };
 
-export const getAllVCs = async () => {
+export const getAllVCs = async (): Promise<string[]> => {
   try {
     const contract = new StellarSdk.Contract(CONTRACT_ID);
-    const txXdr = await buildTxXdr(DUMMY, contract.call('get_all_vcs'));
-    const xdr = await rpcSimulate(txXdr);
-    if (!xdr) return [];
-    return decodeScVal(xdr) ?? [];
+    const txXdr = await buildTx(DUMMY, contract.call('get_all_vcs'));
+    return (await simulate(txXdr)) ?? [];
   } catch (error) {
     console.error('Error fetching all VCs:', error);
     return [];
   }
 };
-
-// Export getAccount for use in components (uses Horizon, not Soroban RPC)
-export { getAccount };

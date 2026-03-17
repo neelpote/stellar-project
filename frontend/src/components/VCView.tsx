@@ -4,6 +4,7 @@ import * as StellarSdk from '@stellar/stellar-sdk';
 import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE, TESTNET_XLM_CONTRACT, HORIZON_URL } from '../config';
 import { server, getStartupStatus, getVCStakeRequired, getVCData, getAllStartups, getAccount } from '../stellar';
+import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 
 const horizonServer = new StellarSdk.Horizon.Server(HORIZON_URL);
 
@@ -52,6 +53,8 @@ export const VCView = ({ publicKey }: VCViewProps) => {
     queryFn: () => viewingAddress ? getStartupStatus(viewingAddress) : null,
     enabled: !!viewingAddress,
   });
+
+  const { data: startupMetadata } = useIPFSMetadata(startupData?.ipfs_cid);
 
   const stakeMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -302,20 +305,22 @@ export const VCView = ({ publicKey }: VCViewProps) => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Approved Startup</div>
-                <h3 className="text-2xl font-bold tracking-tight">{startupData.project_name}</h3>
+                <h3 className="text-2xl font-bold tracking-tight">{startupMetadata?.project_name || 'Loading...'}</h3>
               </div>
               <span className="badge badge-success">Approved</span>
             </div>
             <div className="space-y-3 text-sm">
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Description</div>
-                <p className="text-zinc-700">{startupData.description}</p>
+                <p className="text-zinc-700">{startupMetadata?.description || '—'}</p>
               </div>
               <div className="pt-3 border-t border-black/5">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Project URL</div>
-                <a href={startupData.project_url} target="_blank" rel="noopener noreferrer" className="underline font-medium">
-                  {startupData.project_url} →
-                </a>
+                {startupMetadata?.project_url ? (
+                  <a href={startupMetadata.project_url} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                    {startupMetadata.project_url} →
+                  </a>
+                ) : <span className="text-zinc-400">—</span>}
               </div>
               <div className="pt-3 border-t border-black/5">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Funding Goal</div>

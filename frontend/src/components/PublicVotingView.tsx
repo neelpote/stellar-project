@@ -178,7 +178,7 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
 
         const simulated = await server.simulateTransaction(transaction);
         
-        if (StellarSdk.SorobanRpc.Api.isSimulationSuccess(simulated)) {
+        if (StellarSdk.rpc.Api.isSimulationSuccess(simulated)) {
           const result = simulated.result?.retval;
           if (result) {
             return StellarSdk.scValToNative(result);
