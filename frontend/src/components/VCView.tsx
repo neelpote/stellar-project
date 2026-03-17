@@ -187,6 +187,21 @@ export const VCView = ({ publicKey }: VCViewProps) => {
           <p className="text-zinc-500">Stake XLM to become a verified investor and fund approved startups.</p>
         </div>
 
+        {/* Explainer */}
+        <div className="grid grid-cols-3 gap-px bg-black/10">
+          {[
+            { n: '01', title: 'Stake once', body: 'Lock 1000 XLM into the contract. No admin approval, no whitelist — the stake is your credential.' },
+            { n: '02', title: 'Browse startups', body: 'Search any founder address or browse the full list. View project details, team info, and community votes.' },
+            { n: '03', title: 'Invest directly', body: 'Send any amount of XLM to a startup. Funds go straight into the contract, claimable by the founder.' },
+          ].map(s => (
+            <div key={s.n} className="bg-white p-5">
+              <div className="text-[10px] font-bold tracking-widest text-zinc-300 mb-2">{s.n}</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-1">{s.title}</div>
+              <p className="text-xs text-zinc-500 leading-relaxed">{s.body}</p>
+            </div>
+          ))}
+        </div>
+
         <div className="card">
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
@@ -250,7 +265,7 @@ export const VCView = ({ publicKey }: VCViewProps) => {
       <div>
         <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">VC Dashboard</div>
         <h2 className="text-4xl font-bold tracking-tighter mb-1">{vcData.company_name}</h2>
-        <p className="text-zinc-500">Invest in approved startups</p>
+        <p className="text-zinc-500">Search a founder address below or browse the startup list to invest. Funds are held in the contract and released to founders on claim — your investment is on-chain and transparent.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

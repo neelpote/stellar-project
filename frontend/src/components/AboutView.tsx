@@ -1,338 +1,302 @@
 export const AboutView = () => {
+  const steps = [
+    {
+      n: '01',
+      title: 'Founders Apply',
+      body: 'Submit your startup with a project description, team background, and funding goal. All metadata is pinned to IPFS — only a content hash lives on-chain, keeping costs near zero. Applications open a 7-day community voting window immediately.',
+    },
+    {
+      n: '02',
+      title: 'Community Votes',
+      body: 'Any Stellar wallet holder can vote Yes or No on any open application. One vote per wallet, enforced on-chain. Votes are public and immutable — no backroom deals, no hidden tallies. The approval percentage is visible to everyone in real time.',
+    },
+    {
+      n: '03',
+      title: 'VCs Invest Directly',
+      body: 'Verified VCs stake 1000 XLM to join the network — no admin approval, no whitelist. Once staked, they can invest any amount into any listed startup. Funds are held in the smart contract and released to founders on claim.',
+    },
+    {
+      n: '04',
+      title: 'Founders Claim Funds',
+      body: 'Invested funds accumulate in the contract and are claimable at any time. Founders pull funds directly to their wallet with a single transaction. No intermediary, no delay, no fee beyond the Stellar network base fee.',
+    },
+  ];
+
+  const features = [
+    {
+      title: 'Zero Intermediaries',
+      body: 'Every step — application, voting, investment, and payout — happens directly between participants via smart contract. No platform takes a cut. No gatekeeper decides who gets funded.',
+    },
+    {
+      title: 'On-Chain Governance',
+      body: 'Voting is enforced by the Soroban contract, not by a backend server. Votes cannot be deleted, altered, or censored. The tally is computed from raw on-chain state.',
+    },
+    {
+      title: 'IPFS Metadata',
+      body: 'Project descriptions, team info, and URLs are stored on IPFS via Pinata. The contract stores only the CID — a 46-character hash — reducing on-chain storage costs by over 95%.',
+    },
+    {
+      title: 'Native XLM',
+      body: 'All staking and investment uses Stellar\'s native XLM token. No custom token, no trustlines, no bridge. Anyone with a Stellar wallet can participate immediately.',
+    },
+    {
+      title: 'Rust Smart Contract',
+      body: 'The contract is written in Rust using the Soroban SDK. Concrete return types replace all Option<T> to avoid XDR parsing issues. All state is stored in instance storage with explicit keys.',
+    },
+    {
+      title: 'Open Source',
+      body: 'The full contract and frontend are public on GitHub. Anyone can read the code, verify the logic, fork the project, or propose improvements via pull request.',
+    },
+  ];
+
+  const stack = [
+    {
+      label: 'Smart Contract',
+      items: ['Rust + Soroban SDK', 'Stellar Testnet', 'Instance storage', 'No Option<T> returns'],
+    },
+    {
+      label: 'Frontend',
+      items: ['React 18 + TypeScript', 'Vite + Tailwind CSS', 'React Query', 'Freighter Wallet API'],
+    },
+    {
+      label: 'Infrastructure',
+      items: ['IPFS via Pinata', 'Stellar Horizon API', 'Soroban RPC', 'Vercel Hosting'],
+    },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto space-y-12">
-      {/* Hero Section */}
-      <div className="card text-center">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">
-          About DeCo
+    <div className="max-w-4xl mx-auto space-y-16">
+
+      {/* Hero */}
+      <div className="space-y-4">
+        <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">About DeCo</div>
+        <h1 className="text-6xl font-bold tracking-tighter leading-[0.9]">
+          Decentralized<br />
+          <span className="italic font-serif font-light">Combinator</span>
         </h1>
-        <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          The world's first fully decentralized startup accelerator built on Stellar blockchain, 
-          empowering founders, VCs, and communities to collaborate transparently.
+        <p className="text-xl text-zinc-500 max-w-2xl leading-relaxed">
+          DeCo is a fully on-chain startup accelerator built on Stellar Soroban. No platform fees,
+          no gatekeepers, no opaque decisions. Founders apply, communities vote, VCs invest — all
+          enforced by a single Rust smart contract.
         </p>
       </div>
 
-      {/* Mission Section */}
-      <div className="card">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
-        <p className="text-lg text-gray-700 leading-relaxed mb-4">
-          DeCo (Decentralized Combinator) revolutionizes the traditional accelerator model by removing 
-          intermediaries and creating a transparent, community-driven funding ecosystem. We believe that 
-          great ideas deserve funding based on merit, not connections.
-        </p>
-        <p className="text-lg text-gray-700 leading-relaxed">
-          By leveraging blockchain technology, we ensure every decision is transparent, every vote counts, 
-          and every transaction is secure. Our platform democratizes access to venture capital while 
-          maintaining the highest standards of due diligence through community governance.
-        </p>
+      {/* Stats bar */}
+      <div className="grid grid-cols-4 gap-px bg-black/10">
+        {[
+          { value: '0%', label: 'Platform Fees' },
+          { value: '7 Days', label: 'Voting Period' },
+          { value: '1000 XLM', label: 'VC Stake' },
+          { value: '95%', label: 'Storage Savings' },
+        ].map(s => (
+          <div key={s.label} className="bg-white p-6 text-center">
+            <div className="text-3xl font-bold tracking-tighter mb-1">{s.value}</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{s.label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* How It Works */}
-      <div className="card">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8">How DeCo Works</h2>
-        
-        <div className="space-y-8">
-          {/* Step 1 */}
-          <div className="flex gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
-                1
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Founders Apply</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Startup founders submit applications with project details, team info, and funding goals. 
-                Metadata is stored on IPFS for decentralized storage. A 10 XLM fee prevents spam.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className="flex gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
-                2
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Community Votes</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Every application enters a 7-day public voting period. Any Stellar wallet holder can vote 
-                Yes or No on applications. This DAO governance ensures community-driven decision making 
-                with complete transparency on the blockchain.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 3 */}
-          <div className="flex gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
-                3
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Admin Approves</h3>
-              <p className="text-gray-700 leading-relaxed">
-                After the voting period, the admin reviews community votes and project quality to make 
-                final approval decisions. This combines community wisdom with expert oversight for optimal 
-                startup selection.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 4 */}
-          <div className="flex gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
-                4
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">VCs Stake & Invest</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Venture capitalists stake 1000 XLM to become verified (fully decentralized, no admin 
-                approval needed). Verified VCs can then invest directly in approved startups with any 
-                amount they choose. All investments are recorded on-chain.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 5 */}
-          <div className="flex gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
-                5
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Founders Receive Funding</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Once VCs invest, funds are held in the smart contract. Founders can claim their allocated 
-                funds directly to their wallet. The system supports milestone-based releases for progressive 
-                funding as startups hit their goals.
-              </p>
-            </div>
-          </div>
+      {/* Mission */}
+      <div className="space-y-4">
+        <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">Mission</div>
+        <h2 className="text-3xl font-bold tracking-tighter">Merit over connections</h2>
+        <div className="space-y-4 text-zinc-600 leading-relaxed max-w-3xl">
+          <p>
+            Traditional accelerators are closed systems. A small committee decides who gets in,
+            what terms they receive, and how funds are released. The process is opaque, slow, and
+            geographically biased toward a handful of cities.
+          </p>
+          <p>
+            DeCo replaces that committee with code. The smart contract enforces every rule — who
+            can apply, how votes are counted, when funds can be claimed. No human can override it,
+            delay it, or take a cut from it.
+          </p>
+          <p>
+            The result is a funding pipeline that is open to any founder with a Stellar wallet,
+            evaluated by any community member who wants to participate, and funded by any VC willing
+            to stake their reputation and capital on-chain.
+          </p>
         </div>
       </div>
 
-      {/* Key Features */}
-      <div className="card">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8">Key Features</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border-2 border-gray-300 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Decentralized Governance</h3>
-            <p className="text-gray-700">
-              Community-driven DAO voting system ensures democratic decision-making. Every wallet holder 
-              has a voice in selecting which startups receive funding.
-            </p>
-          </div>
-
-          <div className="border-2 border-gray-300 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Transparent Operations</h3>
-            <p className="text-gray-700">
-              All transactions, votes, and funding decisions are recorded on the Stellar blockchain, 
-              providing complete transparency and immutability.
-            </p>
-          </div>
-
-          <div className="border-2 border-gray-300 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Direct Investment</h3>
-            <p className="text-gray-700">
-              VCs invest directly in startups without intermediaries. No platform fees, no hidden costs. 
-              Funds flow directly from investors to founders.
-            </p>
-          </div>
-
-          <div className="border-2 border-gray-300 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">IPFS Storage</h3>
-            <p className="text-gray-700">
-              Application metadata stored on IPFS ensures decentralized, permanent, and cost-effective 
-              data storage with 95% reduction in on-chain storage costs.
-            </p>
-          </div>
-
-          <div className="border-2 border-gray-300 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Smart Contract Security</h3>
-            <p className="text-gray-700">
-              Built with Rust and Soroban SDK featuring reentrancy guards, checked math, and emergency 
-              pause mechanisms for maximum security.
-            </p>
-          </div>
-
-          <div className="border-2 border-gray-300 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Native XLM</h3>
-            <p className="text-gray-700">
-              Uses Stellar's native XLM token for all transactions. No trustlines needed, making it 
-              simple and accessible for everyone.
-            </p>
-          </div>
+      {/* How it works */}
+      <div className="space-y-8">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Process</div>
+          <h2 className="text-3xl font-bold tracking-tighter">How DeCo works</h2>
+        </div>
+        <div className="space-y-px bg-black/10">
+          {steps.map(s => (
+            <div key={s.n} className="bg-white p-8 flex gap-8">
+              <div className="text-[11px] font-bold tracking-widest text-zinc-300 shrink-0 w-8 pt-0.5">{s.n}</div>
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-widest mb-2">{s.title}</div>
+                <p className="text-sm text-zinc-600 leading-relaxed max-w-2xl">{s.body}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Technology Stack */}
-      <div className="card">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">Technology Stack</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Smart Contract</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>• Rust Programming Language</li>
-              <li>• Soroban SDK 21.7.0</li>
-              <li>• Stellar Testnet</li>
-              <li>• Security-first design</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Frontend</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>• React 18 + TypeScript</li>
-              <li>• Vite Build Tool</li>
-              <li>• Tailwind CSS</li>
-              <li>• React Query</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Infrastructure</h3>
-            <ul className="space-y-2 text-gray-700">
-              <li>• IPFS (Pinata)</li>
-              <li>• Freighter Wallet</li>
-              <li>• Stellar Horizon API</li>
-              <li>• Vercel Hosting</li>
-            </ul>
-          </div>
+      {/* Features */}
+      <div className="space-y-8">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Features</div>
+          <h2 className="text-3xl font-bold tracking-tighter">What makes it different</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black/10">
+          {features.map(f => (
+            <div key={f.title} className="bg-white p-8">
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-3">{f.title}</div>
+              <p className="text-sm text-zinc-600 leading-relaxed">{f.body}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Benefits */}
-      <div className="card">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8">Why Choose DeCo?</h2>
-        
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">For Founders</h3>
-            <ul className="space-y-2 text-gray-700 ml-6">
-              <li>• Access to global VC network without geographical barriers</li>
-              <li>• Fair evaluation based on merit and community support</li>
-              <li>• Fast application process with blockchain efficiency</li>
-              <li>• Direct funding without intermediary fees</li>
-              <li>• Transparent milestone tracking and fund release</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">For VCs</h3>
-            <ul className="space-y-2 text-gray-700 ml-6">
-              <li>• Discover pre-vetted startups approved by community</li>
-              <li>• Invest directly with complete transparency</li>
-              <li>• No platform fees or hidden costs</li>
-              <li>• Portfolio tracking on blockchain</li>
-              <li>• Participate in decentralized governance</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">For Community</h3>
-            <ul className="space-y-2 text-gray-700 ml-6">
-              <li>• Vote on promising startups and shape the ecosystem</li>
-              <li>• Transparent view of all applications and funding</li>
-              <li>• Participate in DAO governance</li>
-              <li>• Support innovation in Web3 space</li>
-              <li>• Build reputation as early supporter</li>
-            </ul>
-          </div>
+      {/* Who it's for */}
+      <div className="space-y-8">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Participants</div>
+          <h2 className="text-3xl font-bold tracking-tighter">Built for three groups</h2>
+        </div>
+        <div className="grid grid-cols-3 gap-px bg-black/10">
+          {[
+            {
+              role: 'Founders',
+              points: [
+                'Apply with a single transaction',
+                'No geographical restrictions',
+                'Funding goal set by you',
+                'Claim funds at any time',
+                'Full metadata on IPFS',
+              ],
+            },
+            {
+              role: 'VCs',
+              points: [
+                'Stake once, invest in any startup',
+                'No admin approval to join',
+                'Full portfolio visibility on-chain',
+                'Invest any amount you choose',
+                'Withdraw stake when done',
+              ],
+            },
+            {
+              role: 'Community',
+              points: [
+                'Vote on any open application',
+                'One vote per wallet, enforced',
+                'See all votes in real time',
+                'Shape which projects get funded',
+                'No token required to vote',
+              ],
+            },
+          ].map(g => (
+            <div key={g.role} className="bg-white p-8">
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-4">{g.role}</div>
+              <ul className="space-y-2">
+                {g.points.map(p => (
+                  <li key={p} className="flex gap-2 text-sm text-zinc-600">
+                    <span className="text-black font-bold shrink-0">—</span>
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="card bg-blue-50 border-blue-300">
-        <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Platform Statistics</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">100%</div>
-            <div className="text-gray-700 font-medium">Decentralized</div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">7 Days</div>
-            <div className="text-gray-700 font-medium">Voting Period</div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">0%</div>
-            <div className="text-gray-700 font-medium">Platform Fees</div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">95%</div>
-            <div className="text-gray-700 font-medium">Storage Savings</div>
-          </div>
+      {/* Tech stack */}
+      <div className="space-y-8">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Technology</div>
+          <h2 className="text-3xl font-bold tracking-tighter">Stack</h2>
+        </div>
+        <div className="grid grid-cols-3 gap-px bg-black/10">
+          {stack.map(s => (
+            <div key={s.label} className="bg-white p-8">
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-4">{s.label}</div>
+              <ul className="space-y-2">
+                {s.items.map(i => (
+                  <li key={i} className="flex gap-2 text-sm text-zinc-600">
+                    <span className="text-black font-bold shrink-0">—</span>
+                    {i}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Security */}
-      <div className="card">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">Security & Trust</h2>
-        
-        <div className="space-y-4 text-gray-700">
-          <p className="leading-relaxed">
-            <strong className="text-gray-900">Smart Contract Security:</strong> Our Rust-based smart 
-            contract includes reentrancy guards, checked math for overflow protection, and emergency 
-            pause mechanisms. All fund movements are protected with multiple security layers.
-          </p>
-          
-          <p className="leading-relaxed">
-            <strong className="text-gray-900">Transparent Operations:</strong> Every transaction, vote, 
-            and decision is recorded on the Stellar blockchain, providing an immutable audit trail that 
-            anyone can verify.
-          </p>
-          
-          <p className="leading-relaxed">
-            <strong className="text-gray-900">Testnet Deployment:</strong> Currently deployed on Stellar 
-            Testnet for safe testing and development. Mainnet deployment will follow comprehensive 
-            security audits.
-          </p>
-          
-          <p className="leading-relaxed">
-            <strong className="text-gray-900">Open Source:</strong> Our code is open source and available 
-            on GitHub for community review and contributions, ensuring transparency and collaborative 
-            improvement.
-          </p>
+      <div className="space-y-6">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Security</div>
+          <h2 className="text-3xl font-bold tracking-tighter">Trust model</h2>
+        </div>
+        <div className="space-y-px bg-black/10">
+          {[
+            {
+              title: 'No Option<T> in contract returns',
+              body: 'All read functions return concrete structs with an exists: bool field. This eliminates the XDR union parsing errors that plagued earlier SDK versions and makes every response predictable.',
+            },
+            {
+              title: 'Auth enforced on every write',
+              body: 'Every state-changing function calls require_auth() on the relevant signer. The contract cannot be manipulated by a third party — only the wallet that owns the action can trigger it.',
+            },
+            {
+              title: 'Funds held in contract, not admin wallet',
+              body: 'Staked XLM and invested funds are held by the contract address itself. The admin has no ability to withdraw or redirect funds. Only the rightful founder can claim their allocation.',
+            },
+            {
+              title: 'Open source and auditable',
+              body: 'The full Rust source is on GitHub. Anyone can read it, compile it, and verify the deployed wasm hash matches the source. There are no hidden functions or upgrade keys.',
+            },
+          ].map(s => (
+            <div key={s.title} className="bg-white p-8 flex gap-8">
+              <div className="shrink-0 w-1.5 bg-black self-stretch" />
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-widest mb-2">{s.title}</div>
+                <p className="text-sm text-zinc-600 leading-relaxed max-w-2xl">{s.body}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Call to Action */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-center rounded-lg p-12 border-2 border-blue-300 shadow-md">
-        <h2 className="text-3xl font-bold mb-4 text-white">Ready to Get Started?</h2>
-        <p className="text-xl mb-8 text-white">
-          Join the decentralized accelerator revolution today
-        </p>
-        <div className="flex gap-4 justify-center flex-wrap">
-          <a 
-            href="https://github.com/neelpote/deco-stellar-accelerator" 
-            target="_blank" 
+      {/* CTA */}
+      <div className="border border-black p-12 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Get Started</div>
+          <h2 className="text-3xl font-bold tracking-tighter">Ready to participate?</h2>
+          <p className="text-zinc-500 mt-2 max-w-md">
+            Connect your Freighter wallet and apply as a founder, stake to become a VC, or vote on
+            open applications. Everything runs on Stellar Testnet.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 shrink-0">
+          <a
+            href="https://github.com/neelpote/deco-stellar-accelerator"
+            target="_blank"
             rel="noopener noreferrer"
-            className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            className="btn btn-primary px-8 py-3"
           >
-            View on GitHub
+            View on GitHub →
           </a>
-          <a 
-            href="https://stellar.org" 
-            target="_blank" 
+          <a
+            href="https://stellar.org"
+            target="_blank"
             rel="noopener noreferrer"
-            className="bg-blue-800 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-900 transition-colors border-2 border-white"
+            className="btn btn-outline px-8 py-3"
           >
             Learn About Stellar
           </a>
         </div>
       </div>
+
     </div>
   );
 };

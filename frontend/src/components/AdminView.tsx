@@ -78,7 +78,21 @@ export const AdminView = ({ publicKey }: AdminViewProps) => {
       <div>
         <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 mb-2">Admin Dashboard</div>
         <h2 className="text-4xl font-bold tracking-tighter mb-2">Manage Applications</h2>
-        <p className="text-zinc-500">Review community votes and approve startup applications.</p>
+        <p className="text-zinc-500">Review community votes and approve startup applications. Approving a startup marks it as verified on-chain — VCs can already invest without approval, but the approved badge signals community endorsement.</p>
+      </div>
+
+      {/* Info strip */}
+      <div className="grid grid-cols-3 gap-px bg-black/10">
+        {[
+          { title: 'Review', body: 'Paste a founder address to pull their on-chain data and IPFS metadata.' },
+          { title: 'Approve', body: 'Approval sets the approved flag on-chain. It cannot be reversed.' },
+          { title: 'Transparent', body: 'Every approval is a blockchain transaction — publicly auditable.' },
+        ].map(s => (
+          <div key={s.title} className="bg-white p-5">
+            <div className="text-[11px] font-bold uppercase tracking-widest mb-1">{s.title}</div>
+            <p className="text-xs text-zinc-500 leading-relaxed">{s.body}</p>
+          </div>
+        ))}
       </div>
 
       <div className="card">
@@ -141,14 +155,14 @@ export const AdminView = ({ publicKey }: AdminViewProps) => {
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Community Votes</div>
               <div className="flex items-center gap-6">
                 <div>
-                  <span className="text-2xl font-bold text-green-600">{Number(reviewData.yes_votes)}</span>
+                  <span className="text-2xl font-bold">{Number(reviewData.yes_votes)}</span>
                   <span className="text-xs text-zinc-400 ml-1">Yes</span>
                 </div>
                 <div>
-                  <span className="text-2xl font-bold text-red-600">{Number(reviewData.no_votes)}</span>
+                  <span className="text-2xl font-bold">{Number(reviewData.no_votes)}</span>
                   <span className="text-xs text-zinc-400 ml-1">No</span>
                 </div>
-                <div className="ml-auto text-sm text-zinc-500">
+                <div className="ml-auto text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                   {Number(reviewData.yes_votes) + Number(reviewData.no_votes) > 0
                     ? `${Math.round((Number(reviewData.yes_votes) / (Number(reviewData.yes_votes) + Number(reviewData.no_votes))) * 100)}% approval`
                     : 'No votes yet'}

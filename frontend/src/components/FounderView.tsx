@@ -114,6 +114,21 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
       {!startupData ? (
         <>
+          {/* How it works */}
+          <div className="grid grid-cols-3 gap-px bg-black/10">
+            {[
+              { n: '01', title: 'Apply', body: 'Fill in your project details. Metadata is stored on IPFS — only a hash goes on-chain.' },
+              { n: '02', title: 'Community votes', body: 'Your application enters a 7-day public voting window. Any Stellar wallet can vote.' },
+              { n: '03', title: 'Receive funding', body: 'Verified VCs invest directly into your startup. Claim funds to your wallet at any time.' },
+            ].map(s => (
+              <div key={s.n} className="bg-white p-5">
+                <div className="text-[10px] font-bold tracking-widest text-zinc-300 mb-2">{s.n}</div>
+                <div className="text-[11px] font-bold uppercase tracking-widest mb-1">{s.title}</div>
+                <p className="text-xs text-zinc-500 leading-relaxed">{s.body}</p>
+              </div>
+            ))}
+          </div>
+
           {!import.meta.env.VITE_PINATA_JWT && !import.meta.env.VITE_PINATA_API_KEY && (
             <div className="p-4 border border-black/10 bg-zinc-50 text-sm text-zinc-600">
               Demo mode: IPFS storage is simulated locally. Configure Pinata credentials for production.
@@ -183,6 +198,26 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
                 <div className="pt-3 border-t border-black/5">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">IPFS CID</div>
                   <p className="text-xs font-mono text-zinc-400 break-all bg-zinc-50 p-2">{startupData.ipfs_cid}</p>
+                </div>
+                <div className="pt-3 border-t border-black/5">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3">Community Votes</div>
+                  {(() => {
+                    const yes = Number(startupData.yes_votes);
+                    const no = Number(startupData.no_votes);
+                    const total = yes + no;
+                    const pct = total > 0 ? Math.round((yes / total) * 100) : 0;
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                          <span>{yes} Yes · {no} No</span>
+                          <span>{total > 0 ? `${pct}% approval` : 'No votes yet'}</span>
+                        </div>
+                        <div className="h-1 w-full bg-zinc-100">
+                          <div className="h-1 bg-black transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ) : (
