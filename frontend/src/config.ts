@@ -4,7 +4,7 @@ export const HORIZON_URL = import.meta.env.VITE_HORIZON_URL || 'https://horizon-
 export const SOROBAN_RPC_URL = import.meta.env.VITE_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org';
 
 // Contract Configuration - NO MORE HARDCODED VALUES
-export const CONTRACT_ID = import.meta.env.VITE_CONTRACT_ID || 'CCXLZPYA3DRTFADOCYUCFF5CXN2YTD4JC7YZ7U3CNRYLPUMJ7CWV7LXP';
+export const CONTRACT_ID = import.meta.env.VITE_CONTRACT_ID || 'CBMWKDCBCZLLZRKU7WAFCGLJ4TK6AANGUSPC2GOIOFCT56WGFLIEMJUR';
 
 // Native XLM Token Contract Address (Soroban)
 export const TESTNET_XLM_CONTRACT = import.meta.env.VITE_XLM_TOKEN_CONTRACT || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';

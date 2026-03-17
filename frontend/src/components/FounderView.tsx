@@ -118,7 +118,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
           <div className="grid grid-cols-3 gap-px bg-black/10">
             {[
               { n: '01', title: 'Apply', body: 'Fill in your project details. Metadata is stored on IPFS — only a hash goes on-chain.' },
-              { n: '02', title: 'Community votes', body: 'Your application enters a 7-day public voting window. Any Stellar wallet can vote.' },
+              { n: '02', title: 'Community votes', body: 'Your application enters a 30-day public voting window. Any Stellar wallet can vote.' },
               { n: '03', title: 'Receive funding', body: 'Verified VCs invest directly into your startup. Claim funds to your wallet at any time.' },
             ].map(s => (
               <div key={s.n} className="bg-white p-5">

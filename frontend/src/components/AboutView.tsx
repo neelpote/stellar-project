@@ -3,7 +3,7 @@ export const AboutView = () => {
     {
       n: '01',
       title: 'Founders Apply',
-      body: 'Submit your startup with a project description, team background, and funding goal. All metadata is pinned to IPFS — only a content hash lives on-chain, keeping costs near zero. Applications open a 7-day community voting window immediately.',
+      body: 'Submit your startup with a project description, team background, and funding goal. All metadata is pinned to IPFS — only a content hash lives on-chain, keeping costs near zero. Applications open a 30-day community voting window immediately.',
     },
     {
       n: '02',
@@ -85,7 +85,7 @@ export const AboutView = () => {
       <div className="grid grid-cols-4 gap-px bg-black/10">
         {[
           { value: '0%', label: 'Platform Fees' },
-          { value: '7 Days', label: 'Voting Period' },
+          { value: '30 Days', label: 'Voting Period' },
           { value: '1000 XLM', label: 'VC Stake' },
           { value: '95%', label: 'Storage Savings' },
         ].map(s => (

@@ -246,7 +246,7 @@ function AppContent() {
                       <div className="mt-16 grid grid-cols-3 gap-px bg-black/10">
                         {[
                           { value: '1000 XLM', label: 'VC Stake' },
-                          { value: '7 Days', label: 'Voting Period' },
+                          { value: '30 Days', label: 'Voting Period' },
                           { value: '0%', label: 'Platform Fee' },
                         ].map(s => (
                           <div key={s.label} className="bg-white pr-6 py-4">
@@ -350,7 +350,7 @@ function AppContent() {
                     {[
                       {
                         n: '01', title: 'Apply',
-                        body: 'Founders submit project details, team info, and a funding goal. Metadata is pinned to IPFS — only a 46-character hash is stored on-chain. A 7-day community voting window opens immediately.',
+                        body: 'Founders submit project details, team info, and a funding goal. Metadata is pinned to IPFS — only a 46-character hash is stored on-chain. A 30-day community voting window opens immediately.',
                       },
                       {
                         n: '02', title: 'Community Votes',

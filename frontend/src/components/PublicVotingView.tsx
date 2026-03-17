@@ -344,7 +344,7 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
         </div>
         <div className="card">
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Voting Period</div>
-          <div className="text-3xl font-bold tracking-tighter">7 Days</div>
+          <div className="text-3xl font-bold tracking-tighter">30 Days</div>
         </div>
         <div className="card">
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Network</div>

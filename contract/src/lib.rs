@@ -68,7 +68,7 @@ impl DeCo {
             panic!("already applied");
         }
 
-        let voting_end_time = env.ledger().timestamp() + (7 * 24 * 60 * 60);
+        let voting_end_time = env.ledger().timestamp() + (30 * 24 * 60 * 60);
 
         let data = StartupData {
             ipfs_cid,
