@@ -7,6 +7,7 @@ import { server, getAllVCs, getAccount, getMilestoneVoteTally } from '../stellar
 import { useStartupStatus } from '../hooks/useStartupStatus';
 import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 import { uploadToIPFS } from '../ipfs';
+import { ChatBox } from './ChatBox';
 
 interface FounderViewProps {
   publicKey: string;
@@ -20,6 +21,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
   const [fundingGoal, setFundingGoal] = useState('');
   const [milestoneEnabled, setMilestoneEnabled] = useState(false);
   const [totalMilestones, setTotalMilestones] = useState('3');
+  const [chatWithVC, setChatWithVC] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { data: startupData, isLoading } = useStartupStatus(publicKey);
   const { data: metadata, isLoading: metadataLoading } = useIPFSMetadata(startupData?.ipfs_cid);
@@ -401,7 +403,40 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
               )}
             </div>
           )}
+
+          {/* VC Messages */}
+          {allVCs.length > 0 && (
+            <div className="card">
+              <div className="text-[11px] font-bold uppercase tracking-widest mb-4">Messages from VCs</div>
+              <div className="space-y-2">
+                {allVCs.slice(0, 10).map((vc: string) => (
+                  <button
+                    key={vc}
+                    onClick={() => setChatWithVC(chatWithVC === vc ? null : vc)}
+                    className="w-full text-left p-3 border border-black/10 hover:border-black transition-all flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-0.5">VC</div>
+                      <div className="text-xs font-mono">{vc.slice(0, 8)}...{vc.slice(-6)}</div>
+                    </div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest">
+                      {chatWithVC === vc ? 'Close' : 'Open Chat →'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {chatWithVC && (
+        <ChatBox
+          myAddress={publicKey}
+          otherAddress={chatWithVC}
+          otherLabel="VC"
+          onClose={() => setChatWithVC(null)}
+        />
       )}
     </div>
   );

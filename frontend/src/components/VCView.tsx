@@ -5,6 +5,7 @@ import { signTransaction } from '@stellar/freighter-api';
 import { CONTRACT_ID, NETWORK_PASSPHRASE, TESTNET_XLM_CONTRACT, HORIZON_URL } from '../config';
 import { server, getStartupStatus, getVCStakeRequired, getVCData, getAllStartups, getAccount, getVCInvestment, hasVotedMilestone } from '../stellar';
 import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
+import { ChatBox } from './ChatBox';
 
 const horizonServer = new StellarSdk.Horizon.Server(HORIZON_URL);
 
@@ -17,6 +18,7 @@ export const VCView = ({ publicKey }: VCViewProps) => {
   const [viewingAddress, setViewingAddress] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('');
   const [investAmount, setInvestAmount] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: stakeRequired = '0' } = useQuery({ queryKey: ['vcStakeRequired'], queryFn: getVCStakeRequired });
@@ -356,6 +358,18 @@ export const VCView = ({ publicKey }: VCViewProps) => {
             </form>
           </div>
 
+          {/* Message founder */}
+          <div className="card">
+            <div className="text-[11px] font-bold uppercase tracking-widest mb-2">Direct Message</div>
+            <p className="text-xs text-zinc-500 mb-4">Have a question for the founder? Send them a message directly.</p>
+            <button
+              onClick={() => setChatOpen(true)}
+              className="btn btn-outline w-full py-3"
+            >
+              Message Founder
+            </button>
+          </div>
+
           {/* Milestone voting — only shown if this VC invested and milestones are enabled */}
           {isMilestoneStartup && hasInvested && !allMilestonesReleased && (
             <div className="card">
@@ -407,6 +421,15 @@ export const VCView = ({ publicKey }: VCViewProps) => {
           <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Startup Not Found</div>
           <p className="text-zinc-500 text-sm">No application found for this address.</p>
         </div>
+      )}
+
+      {chatOpen && viewingAddress && (
+        <ChatBox
+          myAddress={publicKey}
+          otherAddress={viewingAddress}
+          otherLabel="Founder"
+          onClose={() => setChatOpen(false)}
+        />
       )}
     </div>
   );
