@@ -286,6 +286,16 @@ VC invests 3000 XLM  →  held in contract escrow
 
 ---
 
+## User Feedback
+
+DeCo is being tested with real users. Feedback is collected via Google Form and tracked in a public sheet.
+
+[View feedback responses →](https://docs.google.com/spreadsheets/d/1hsT7-U5rW9-prYaEd7xFJ3QcrYO-N1i27WeDCymYJ7k/edit?usp=sharing)
+
+Changes shipped based on real user feedback are tagged in commit messages with `feedback from real user via Google Form`. The most recent example: role-based navigation (commit `fb6bbc5`) — users reported the nav was confusing because all tabs were shown regardless of role.
+
+---
+
 ## Contributing
 
 ```bash
