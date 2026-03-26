@@ -70,28 +70,70 @@ function AppContent() {
 
   const isAdmin = wallet.publicKey && adminAddress && !adminLoading && wallet.publicKey === adminAddress;
 
+  // ── Role-based nav ────────────────────────────────────────────────────────
+  // Build nav links based on who is connected
+  const navLinks = (() => {
+    if (!wallet.isConnected) return [{ label: 'About', view: 'about' as ViewMode }];
+
+    const links: { label: string; view: ViewMode; unreadDot?: boolean }[] = [];
+
+    if (isVC) {
+      links.push({ label: 'VC Dashboard', view: 'vc', unreadDot: totalUnread > 0 });
+    } else {
+      links.push({ label: 'My Application', view: 'founder', unreadDot: totalUnread > 0 });
+    }
+
+    links.push({ label: 'Vote', view: 'voting' });
+
+    // Non-VCs can still see the "Become VC" path
+    if (!isVC) {
+      links.push({ label: 'Become VC', view: 'vc' });
+    }
+
+    links.push({ label: 'About', view: 'about' });
+
+    if (isAdmin) {
+      links.push({ label: 'Admin', view: 'admin' });
+    }
+
+    return links;
+  })();
+
+  // Auto-redirect to correct home view when role is resolved
+  useEffect(() => {
+    if (!wallet.isConnected) return;
+    if (viewMode === 'founder' && isVC) setViewMode('vc');
+  }, [isVC, wallet.isConnected]);
+
   const renderView = () => {
     if (viewMode === 'about') return <AboutView />;
-    if (!wallet.isConnected || !wallet.publicKey) return null;
+    if (!wallet.isConnected || !wallet.publicKey) {
+      return (
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Wallet Required</div>
+          <h2 className="text-3xl font-bold tracking-tighter mb-3">Connect to continue</h2>
+          <p className="text-zinc-500 text-sm mb-8 max-w-sm">
+            You need a Freighter wallet connected to access this section.
+          </p>
+          <button onClick={connectWallet} className="btn btn-primary flex items-center gap-2 px-8 py-3">
+            <Wallet size={14} /> Connect Wallet
+          </button>
+        </div>
+      );
+    }
     if (viewMode === 'admin' && isAdmin && adminAddress === wallet.publicKey)
       return <AdminView publicKey={wallet.publicKey} />;
-    if (viewMode === 'admin' && (!isAdmin || adminAddress !== wallet.publicKey)) {
-      setViewMode('founder');
-      return <FounderView publicKey={wallet.publicKey} />;
+    if (viewMode === 'admin') {
+      setViewMode(isVC ? 'vc' : 'founder');
+      return null;
     }
     switch (viewMode) {
       case 'vc': return <VCView publicKey={wallet.publicKey} />;
       case 'voting': return <PublicVotingView publicKey={wallet.publicKey} />;
+      case 'founder': return <FounderView publicKey={wallet.publicKey} />;
       default: return <FounderView publicKey={wallet.publicKey} />;
     }
   };
-
-  const navLinks = [
-    { label: 'Founders', view: 'founder' as ViewMode },
-    { label: 'Vote', view: 'voting' as ViewMode },
-    { label: isVC ? 'VC Dashboard' : 'Become VC', view: 'vc' as ViewMode },
-    { label: 'About', view: 'about' as ViewMode },
-  ];
 
   return (
     <div className="min-h-screen bg-white text-black font-sans selection:bg-black selection:text-white">
@@ -109,37 +151,23 @@ function AppContent() {
             </div>
           </div>
 
-          {/* Desktop Nav */}
-          {wallet.isConnected && (
-            <div className="hidden md:flex items-center gap-1">
-              {navLinks.map(link => (
-                <button
-                  key={link.view}
-                  onClick={() => setViewMode(link.view)}
-                  className={`relative px-4 py-2 text-[11px] font-bold uppercase tracking-widest transition-all ${
-                    viewMode === link.view
-                      ? 'bg-black text-white'
-                      : 'text-zinc-500 hover:text-black'
-                  }`}
-                >
-                  {link.label}
-                  {totalUnread > 0 && (link.view === 'founder' || link.view === 'vc') && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-black rounded-full border border-white" />
-                  )}
-                </button>
-              ))}
-              {isAdmin && (
-                <button
-                  onClick={() => setViewMode('admin')}
-                  className={`px-4 py-2 text-[11px] font-bold uppercase tracking-widest transition-all ${
-                    viewMode === 'admin' ? 'bg-black text-white' : 'text-zinc-500 hover:text-black'
-                  }`}
-                >
-                  Admin
-                </button>
-              )}
-            </div>
-          )}
+          {/* Desktop Nav — always visible, role-based links */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map(link => (
+              <button
+                key={link.view}
+                onClick={() => setViewMode(link.view)}
+                className={`relative px-4 py-2 text-[11px] font-bold uppercase tracking-widest transition-all ${
+                  viewMode === link.view ? 'bg-black text-white' : 'text-zinc-500 hover:text-black'
+                }`}
+              >
+                {link.label}
+                {link.unreadDot && (
+                  <span className="absolute top-1.5 right-1 w-1.5 h-1.5 bg-black rounded-full border border-white" />
+                )}
+              </button>
+            ))}
+          </div>
 
           {/* Wallet */}
           <div className="flex items-center gap-3">
@@ -165,49 +193,39 @@ function AppContent() {
                 Connect
               </button>
             )}
-            {/* Mobile menu toggle */}
-            {wallet.isConnected && (
-              <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
-            )}
+            {/* Mobile menu toggle — always show */}
+            <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && wallet.isConnected && (
+        {mobileMenuOpen && (
           <div className="md:hidden border-t border-black/10 bg-white">
             {navLinks.map(link => (
               <button
                 key={link.view}
                 onClick={() => { setViewMode(link.view); setMobileMenuOpen(false); }}
-                className={`w-full text-left px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-black/5 ${
+                className={`relative w-full text-left px-6 py-4 text-[11px] font-bold uppercase tracking-widest border-b border-black/5 flex items-center justify-between ${
                   viewMode === link.view ? 'bg-black text-white' : 'text-zinc-600'
                 }`}
               >
                 {link.label}
+                {link.unreadDot && (
+                  <span className="w-2 h-2 bg-black rounded-full" />
+                )}
               </button>
             ))}
-            {isAdmin && (
-              <button
-                onClick={() => { setViewMode('admin'); setMobileMenuOpen(false); }}
-                className={`w-full text-left px-6 py-4 text-[11px] font-bold uppercase tracking-widest ${
-                  viewMode === 'admin' ? 'bg-black text-white' : 'text-zinc-600'
-                }`}
-              >
-                Admin
-              </button>
-            )}
           </div>
         )}
       </nav>
 
       {/* Main Content */}
       <main className="pt-20">
-        {!wallet.isConnected || !wallet.publicKey ? (
-          viewMode === 'about' ? (
-            <div className="max-w-7xl mx-auto px-6 py-20"><AboutView /></div>
-          ) : (
+        {viewMode === 'about' ? (
+          <div className="max-w-7xl mx-auto px-6 py-20"><AboutView /></div>
+        ) : (!wallet.isConnected || !wallet.publicKey) ? (
             <>
               {/* Hero */}
               <section className="pt-20 pb-24 border-b border-black/5">
@@ -434,8 +452,7 @@ function AppContent() {
                 </div>
               </section>
             </>
-          )
-        ) : (
+          ) : (
           <div className="max-w-7xl mx-auto px-6 py-12">
             {renderView()}
           </div>
