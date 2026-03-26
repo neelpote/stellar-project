@@ -54,8 +54,15 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
   const applyMutation = useMutation({
     mutationFn: async (data: { name: string; desc: string; url: string; team: string; goal: string; milestoneEnabled: boolean; totalMilestones: number }) => {
+      // Pre-flight: verify account exists on testnet
+      let sourceAccount;
+      try {
+        sourceAccount = await getAccount(publicKey);
+      } catch {
+        throw new Error('loadAccount failed — wallet not funded on testnet');
+      }
+
       const ipfsCid = await uploadToIPFS({ project_name: data.name, description: data.desc, project_url: data.url, team_info: data.team });
-      const sourceAccount = await getAccount(publicKey);
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const goalInStroops = Math.floor(parseFloat(data.goal) * 1e7);
       const transaction = new StellarSdk.TransactionBuilder(sourceAccount, { fee: StellarSdk.BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })
@@ -70,11 +77,17 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
         .setTimeout(30).build();
       const prepared = await server.prepareTransaction(transaction);
       const signedXdr = await signTransaction(prepared.toXDR(), { networkPassphrase: NETWORK_PASSPHRASE });
+      if (!signedXdr) throw new Error('User declined the transaction in Freighter');
       const signedTx = StellarSdk.TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
       const result = await server.sendTransaction(signedTx);
       let status = await server.getTransaction(result.hash);
-      while (status.status === 'NOT_FOUND') { await new Promise(r => setTimeout(r, 1000)); status = await server.getTransaction(result.hash); }
-      if (status.status !== 'SUCCESS') throw new Error('Transaction failed');
+      let attempts = 0;
+      while (status.status === 'NOT_FOUND' && attempts < 30) {
+        await new Promise(r => setTimeout(r, 1000));
+        status = await server.getTransaction(result.hash);
+        attempts++;
+      }
+      if (status.status !== 'SUCCESS') throw new Error(`Transaction failed with status: ${status.status}`);
       return status;
     },
     onSuccess: () => {
@@ -82,7 +95,23 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
       setProjectName(''); setDescription(''); setProjectUrl(''); setTeamInfo(''); setFundingGoal('');
       alert('Application submitted successfully!');
     },
-    onError: (error) => { console.error('Application error:', error); alert('Failed to submit application. Check console for details.'); },
+    onError: (error) => {
+      console.error('Application error:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes('already applied')) {
+        alert('You have already submitted an application with this wallet.');
+      } else if (msg.includes('404') || msg.includes('not found') || msg.includes('loadAccount')) {
+        alert('Your wallet is not funded on Stellar Testnet.\n\nGet free testnet XLM at:\nhttps://friendbot.stellar.org/?addr=' + publicKey);
+      } else if (msg.includes('User declined') || msg.includes('rejected')) {
+        alert('Transaction was cancelled in Freighter.');
+      } else if (msg.includes('Network') || msg.includes('passphrase')) {
+        alert('Wrong network in Freighter. Please switch to Stellar Testnet in your Freighter settings.');
+      } else if (msg.includes('IPFS') || msg.includes('Pinata') || msg.includes('upload')) {
+        alert('Failed to upload metadata to IPFS. Please check your internet connection and try again.');
+      } else {
+        alert('Failed to submit application.\n\nError: ' + msg);
+      }
+    },
   });
 
   const claimMutation = useMutation({
@@ -182,6 +211,13 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
           <div className="card">
             <div className="text-[11px] font-bold uppercase tracking-widest mb-6">Application Form</div>
+            <div className="p-3 border border-black/10 bg-zinc-50 text-xs text-zinc-500 mb-5">
+              Make sure your Freighter wallet is set to <span className="font-bold text-black">Stellar Testnet</span> and funded.
+              Get free testnet XLM at{' '}
+              <a href={`https://friendbot.stellar.org/?addr=${publicKey}`} target="_blank" rel="noopener noreferrer" className="underline font-medium text-black">
+                friendbot.stellar.org
+              </a>
+            </div>
             <form onSubmit={handleApply} className="space-y-5">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest mb-2">Project Name *</label>
