@@ -54,14 +54,8 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
   const applyMutation = useMutation({
     mutationFn: async (data: { name: string; desc: string; url: string; team: string; goal: string; milestoneEnabled: boolean; totalMilestones: number }) => {
-      // Pre-flight: verify account exists on testnet
-      let sourceAccount;
-      try {
-        sourceAccount = await getAccount(publicKey);
-      } catch {
-        throw new Error('loadAccount failed — wallet not funded on testnet');
-      }
-
+      // getAccount auto-funds via Friendbot if wallet is new
+      const sourceAccount = await getAccount(publicKey);
       const ipfsCid = await uploadToIPFS({ project_name: data.name, description: data.desc, project_url: data.url, team_info: data.team });
       const contract = new StellarSdk.Contract(CONTRACT_ID);
       const goalInStroops = Math.floor(parseFloat(data.goal) * 1e7);
@@ -101,8 +95,6 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
       const msg = error instanceof Error ? error.message : String(error);
       if (msg.includes('already applied')) {
         alert('You have already submitted an application with this wallet.');
-      } else if (msg.includes('404') || msg.includes('not found') || msg.includes('loadAccount')) {
-        alert('Your wallet is not funded on Stellar Testnet.\n\nGet free testnet XLM at:\nhttps://friendbot.stellar.org/?addr=' + publicKey);
       } else if (msg.includes('User declined') || msg.includes('rejected')) {
         alert('Transaction was cancelled in Freighter.');
       } else if (msg.includes('Network') || msg.includes('passphrase')) {

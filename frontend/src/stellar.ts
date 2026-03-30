@@ -7,8 +7,21 @@ const horizon = new StellarSdk.Horizon.Server(HORIZON_URL);
 // Soroban RPC for write ops (prepareTransaction, sendTransaction, getTransaction)
 export const server = new StellarSdk.rpc.Server(SOROBAN_RPC_URL);
 
+// ─── Auto-fund via Friendbot if account doesn't exist ────────────────────────
+const ensureFunded = async (address: string): Promise<void> => {
+  try {
+    await horizon.loadAccount(address);
+  } catch {
+    console.log('New account — auto-funding via Friendbot...');
+    const res = await fetch(`https://friendbot.stellar.org/?addr=${address}`);
+    if (!res.ok) throw new Error('Auto-funding failed. Please visit friendbot.stellar.org manually.');
+    await new Promise(r => setTimeout(r, 3000));
+  }
+};
+
 // ─── Account helper ───────────────────────────────────────────────────────────
 export const getAccount = async (address: string): Promise<StellarSdk.Account> => {
+  await ensureFunded(address);
   const acc = await horizon.loadAccount(address);
   return new StellarSdk.Account(acc.accountId(), acc.sequenceNumber());
 };
@@ -194,10 +207,9 @@ export const getMilestoneVoteTally = async (founder: string): Promise<[number, n
   }
 };
 
-// ─── Fee Bump submission ──────────────────────────────────────────────────────
-// Sends the user-signed transaction to our fee bump API.
-// The sponsor pays all fees — user needs zero XLM for gas.
-// Falls back to direct submission if the API is unavailable.
+// ─── Fee Bump ─────────────────────────────────────────────────────────────────
+// Submits via fee bump so the sponsor pays all fees.
+// Users need zero XLM — completely gasless onboarding.
 
 export const submitWithFeeBump = async (
   signedTx: StellarSdk.Transaction | StellarSdk.FeeBumpTransaction
@@ -220,7 +232,7 @@ export const submitWithFeeBump = async (
   } catch (feeBumpError) {
     // Fallback: submit directly (user pays their own fee)
     console.warn('Fee bump unavailable, submitting directly:', feeBumpError);
-    const result = await server.sendTransaction(signedTx);
+    const result = await server.sendTransaction(signedTx as StellarSdk.Transaction);
     return { hash: result.hash };
   }
 };
