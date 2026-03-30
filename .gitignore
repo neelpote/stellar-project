@@ -25,5 +25,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Internal scripts — never commit
-scripts/
+# Internal tools — never commit
+tools/
