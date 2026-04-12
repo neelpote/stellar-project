@@ -9,6 +9,7 @@ import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 import { uploadToIPFS } from '../ipfs';
 import { ChatBox } from './ChatBox';
 import { useUnreadCounts, requestNotificationPermission } from '../hooks/useUnreadCounts';
+import { trackEvent } from '../supabase';
 
 interface FounderViewProps {
   publicKey: string;
@@ -88,6 +89,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['startupStatus'] });
       setProjectName(''); setDescription(''); setProjectUrl(''); setTeamInfo(''); setFundingGoal('');
+      trackEvent(publicKey, 'apply', { funding_goal: fundingGoal });
       alert('Application submitted successfully!');
     },
     onError: (error) => {
@@ -125,7 +127,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
       if (status.status !== 'SUCCESS') throw new Error('Transaction failed');
       return status;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['startupStatus'] }); alert('Funds claimed successfully!'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['startupStatus'] }); trackEvent(publicKey, 'claim_funds'); alert('Funds claimed successfully!'); },
     onError: () => alert('Failed to claim funds. Please try again.'),
   });
 

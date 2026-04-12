@@ -7,6 +7,7 @@ import { server, getStartupStatus, getVCStakeRequired, getVCData, getAllStartups
 import { useIPFSMetadata } from '../hooks/useIPFSMetadata';
 import { ChatBox } from './ChatBox';
 import { useUnreadCounts, requestNotificationPermission } from '../hooks/useUnreadCounts';
+import { trackEvent } from '../supabase';
 
 const horizonServer = new StellarSdk.Horizon.Server(HORIZON_URL);
 
@@ -115,7 +116,7 @@ export const VCView = ({ publicKey }: VCViewProps) => {
       if (status.status !== 'SUCCESS') throw new Error('Transaction failed');
       return status;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['vcData'] }); setCompanyName(''); alert('Successfully staked! You are now a verified VC.'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['vcData'] }); setCompanyName(''); trackEvent(publicKey, 'stake_vc'); alert('Successfully staked! You are now a verified VC.'); },
     onError: (e) => alert(`Failed to stake: ${e instanceof Error ? e.message : 'Unknown error'}`),
   });
 
@@ -143,6 +144,7 @@ export const VCView = ({ publicKey }: VCViewProps) => {
       queryClient.invalidateQueries({ queryKey: ['vcData'] });
       queryClient.invalidateQueries({ queryKey: ['vcInvestment'] });
       setInvestAmount('');
+      trackEvent(publicKey, 'invest', { founder: viewingAddress, amount: investAmount });
       alert('Investment successful!');
     },
     onError: () => alert('Failed to invest. Please try again.'),

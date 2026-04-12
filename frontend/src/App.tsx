@@ -11,16 +11,18 @@ import { VCView } from './components/VCView';
 import { PublicVotingView } from './components/PublicVotingView';
 import { AboutView } from './components/AboutView';
 import { PublicStartupDirectory } from './components/PublicStartupDirectory';
+import { MetricsDashboard } from './components/MetricsDashboard';
 import * as StellarSdk from '@stellar/stellar-sdk';
 import { CONTRACT_ID, NETWORK_PASSPHRASE } from './config';
 import { server, getAccount, getAllVCs, getAllStartups } from './stellar';
 import { useUnreadCounts } from './hooks/useUnreadCounts';
+import { trackSession } from './supabase';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, refetchOnWindowFocus: false } },
 });
 
-type ViewMode = 'founder' | 'vc' | 'voting' | 'admin' | 'about';
+type ViewMode = 'founder' | 'vc' | 'voting' | 'admin' | 'metrics' | 'about';
 
 function AppContent() {
   const { wallet, connectWallet, disconnectWallet } = useWallet();
@@ -94,6 +96,7 @@ function AppContent() {
 
     if (isAdmin) {
       links.push({ label: 'Admin', view: 'admin' });
+      links.push({ label: 'Metrics', view: 'metrics' });
     }
 
     return links;
@@ -104,6 +107,13 @@ function AppContent() {
     if (!wallet.isConnected) return;
     if (viewMode === 'founder' && isVC) setViewMode('vc');
   }, [isVC, wallet.isConnected]);
+
+  // Track session when wallet connects
+  useEffect(() => {
+    if (!wallet.publicKey) return;
+    const role = isAdmin ? 'admin' : isVC ? 'vc' : 'founder';
+    trackSession(wallet.publicKey, role);
+  }, [wallet.publicKey, isAdmin, isVC]);
 
   const renderView = () => {
     if (viewMode === 'about') return <AboutView />;
@@ -123,7 +133,9 @@ function AppContent() {
     }
     if (viewMode === 'admin' && isAdmin && adminAddress === wallet.publicKey)
       return <AdminView publicKey={wallet.publicKey} />;
-    if (viewMode === 'admin') {
+    if (viewMode === 'metrics' && isAdmin)
+      return <MetricsDashboard />;
+    if (viewMode === 'admin' || viewMode === 'metrics') {
       setViewMode(isVC ? 'vc' : 'founder');
       return null;
     }
