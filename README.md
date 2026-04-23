@@ -124,10 +124,15 @@ Feedback collected via Google Form from real users who tested the app.
 
 **[View form responses](https://docs.google.com/spreadsheets/d/1hsT7-U5rW9-prYaEd7xFJ3QcrYO-N1i27WeDCymYJ7k/edit?usp=sharing)**
 
-### Table 1 — All Users
+### Table 1 — All Users (5 from Level 5 + 25 from Level 6)
 
-| Name | Email | Wallet Address | Feedback |
-|------|-------|----------------|----------|
+| User Name | User Email | User Wallet Address | User Feedback |
+|-----------|------------|---------------------|---------------|
+| Karan Malhotra *(L5)* | karan.malhotra.blr@gmail.com | `GBASPEHFT2Z6ANA5HBKJSAJXQR3NKTBG6L7U4FIKXBT7NR6YTDAG27SM` | No notification when a VC invests in your startup |
+| Priya Nair *(L5)* | priya.nair.mum@gmail.com | `GAEJZTWGMZCDGYWOSOVEVT5XTP6WHAK2GLJLG57ZUCJRKHTD4BOVOBF3` | Metrics tab shows DAU but no weekly or monthly trend |
+| Rahul Gupta *(L5)* | rahul.gupta.del@gmail.com | `GBFMIBZ4NFYE4Y5FDHZTGMCZ2QVRPUSQUBNVWBOT2AKE5XAQGDNIZZPI` | Voter entry |
+| Kavya Reddy *(L5)* | kavya.reddy.hyd@gmail.com | `GCIYAHMBKQEV7RR7HZBRBNAEPMRJYAYRSTX6BXL3W6HKSWSQZXSQSMG6` | Mobile layout breaks on the VC dashboard |
+| Nisha Agarwal *(L5)* | nisha.agarwal.pune@gmail.com | `GCBABJJ5V3KOO6KFOE2KY3YHPBOZT6NIO57MMXZ3XRT3KDXQBN55D7NL` | N/A |
 | Rahul Desai | rahul.desai.dev@gmail.com | `GDR3PZAVF33YOH63PZUJNYM6YSQG6LYW2GYJT62CV7OCCAD634HDDNA2` | Submission portal goes blank for a second |
 | Sneha Kulkarni | sneha.kulkarni.web3@gmail.com | `GAAHDEV3ZYDI2ZJUCGFKADKFS7V4M2BANFHTOOZ6VW64ZRPDNC2A6CSN` | No way to see all startups you've voted on |
 | Mihail Popescu | mihail.popescu.ro@gmail.com | `GAYYMURQCKEXJ2JM4VW5QAQ7VUJFET5GKXVYQNG5K6ENAZPR5H46HVIY` | Just fix the submit bug |
@@ -149,11 +154,6 @@ Feedback collected via Google Form from real users who tested the app.
 | Oluwaseun Adebayo | oluwaseun.adebayo.abj@gmail.com | `GCUV4EU3MFNV467W7TT6GT6GT4XLUSX7ENHDROPEQXQG24FK4VFX6RYK` | Voter entry |
 | Sofia Andreou | sofia.andreou.ath@gmail.com | `GDC4GCUMIB5U2XTEB42FRGBOJCSGFPBE3R25EEUCEA7MN2PD2PRFY332` | Mindblowing |
 | Tariq Hassan | tariq.hassan.khi@gmail.com | `GB7F4YVEMREOBONP7UYHKR7RCSID6EVBTDELO5I6EEYNC7MNVP2CTM7D` | No search on the voting page |
-| Karan Malhotra | karan.malhotra.blr@gmail.com | `GBASPEHFT2Z6ANA5HBKJSAJXQR3NKTBG6L7U4FIKXBT7NR6YTDAG27SM` | No notification when a VC invests in your startup |
-| Priya Nair | priya.nair.mum@gmail.com | `GAEJZTWGMZCDGYWOSOVEVT5XTP6WHAK2GLJLG57ZUCJRKHTD4BOVOBF3` | Metrics tab shows DAU but no weekly or monthly trend |
-| Rahul Gupta | rahul.gupta.del@gmail.com | `GBFMIBZ4NFYE4Y5FDHZTGMCZ2QVRPUSQUBNVWBOT2AKE5XAQGDNIZZPI` | Voter entry |
-| Kavya Reddy | kavya.reddy.hyd@gmail.com | `GCIYAHMBKQEV7RR7HZBRBNAEPMRJYAYRSTX6BXL3W6HKSWSQZXSQSMG6` | Mobile layout breaks on the VC dashboard |
-| Nisha Agarwal | nisha.agarwal.pune@gmail.com | `GCBABJJ5V3KOO6KFOE2KY3YHPBOZT6NIO57MMXZ3XRT3KDXQBN55D7NL` | N/A |
 | Arjun Sharma | arjun.sharma.jpr@gmail.com | `GDAMMFLNBQRMP3MXIXFUIED54U3ONQCMZXT2PMBNVUTCUZQHB722OCL6` | No dark mode. Chat has no timestamps |
 | Meera Joshi | meera.joshi.pune@gmail.com | `GDWKPXW6CVFYT25MCZN6VI3WWI5TAEWIWOYIGCETTOXUKM26EOB4KD3B` | No way to cancel VC stake once submitted |
 | Vikram Nair | vikram.nair.chn@gmail.com | `GALSWRQA4Z433TPDPEJ6DZ5WQP3HUWEIE63E7CVGDKUOTKMS4G2PDEUH` | If Freighter is not installed, clicking Connect shows a generic error |
@@ -161,10 +161,10 @@ Feedback collected via Google Form from real users who tested the app.
 
 ---
 
-### Table 2 — Feedback Implemented
+### Table 2 — User Feedback Implementation
 
-| Name | Email | Wallet Address | Feedback | Commit |
-|------|-------|----------------|----------|--------|
+| User Name | User Email | User Wallet Address | User Feedback | Commit ID |
+|-----------|------------|---------------------|---------------|-----------|
 | Divya Menon | divya.menon.blr@gmail.com | `GAFOVWKIF5EEFEXRUSOPJQ3ZJ7UCPHS6ICRAGRAD63OLFFLMQ2IYXF32` | Add a back button in about section | [`72c0bd5`](https://github.com/neelpote/deco-combinator/commit/72c0bd5) |
 | Pooja Iyer | pooja.iyer.chennai@gmail.com | `GDQG5X6K3RGGSNHOOXHLTTHVJBFDFUTUOH77BT7DUBEQXNQJUULG4GJO` | VC browse list only shows 6 startups with no show more | [`18e8c65`](https://github.com/neelpote/deco-combinator/commit/18e8c65) |
 | Aryan Mehta | aryan.mehta.surat@gmail.com | `GB7F4YVEMREOBONP7UYHKR7RCSID6EVBTDELO5I6EEYNC7MNVP2CTM7D` | Funding goal input has no validation, someone could enter 0 | [`5e83091`](https://github.com/neelpote/deco-combinator/commit/5e83091) |
