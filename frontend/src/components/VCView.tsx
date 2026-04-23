@@ -298,15 +298,15 @@ export const VCView = ({ publicKey }: VCViewProps) => {
         <p className="text-zinc-500">Browse startups, invest, and vote on milestone releases. All activity is on-chain and transparent.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2">
         <div className="card">
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Your Stake</div>
-          <div className="text-3xl font-bold tracking-tighter">{(Number(vcData.stake_amount) / 1e7).toFixed(2)} <span className="text-lg text-zinc-400">XLM</span></div>
+          <div className="text-2xl sm:text-3xl font-bold tracking-tighter">{(Number(vcData.stake_amount) / 1e7).toFixed(2)} <span className="text-lg text-zinc-400">XLM</span></div>
           <span className="badge badge-primary mt-2">Staked</span>
         </div>
         <div className="card">
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Total Invested</div>
-          <div className="text-3xl font-bold tracking-tighter">{(Number(vcData.total_invested) / 1e7).toFixed(2)} <span className="text-lg text-zinc-400">XLM</span></div>
+          <div className="text-2xl sm:text-3xl font-bold tracking-tighter">{(Number(vcData.total_invested) / 1e7).toFixed(2)} <span className="text-lg text-zinc-400">XLM</span></div>
           <span className="badge badge-success mt-2">Deployed</span>
         </div>
       </div>

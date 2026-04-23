@@ -135,7 +135,11 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
     queryKey: ['votingStartup', viewingAddress],
     queryFn: () => viewingAddress ? getStartupStatus(viewingAddress) : null,
     enabled: !!viewingAddress,
-    refetchInterval: 5000,
+    refetchInterval: (data) => {
+      // Only poll if voting is still active
+      if (!data || !data.voting_end_time) return false;
+      return isActive(data.voting_end_time) ? 5000 : false;
+    },
   });
 
   const { data: metadata, isLoading: metaLoading } = useIPFSMetadata(startupData?.ipfs_cid);
