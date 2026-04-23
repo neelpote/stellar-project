@@ -29,7 +29,6 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for existing connection on mount
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -37,13 +36,10 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
         if (connected) {
           const key = await getPublicKey();
           setPublicKey(key);
-          // Persist to localStorage
           localStorage.setItem('wallet_public_key', key);
         } else {
-          // Check localStorage for previous session
           const savedKey = localStorage.getItem('wallet_public_key');
           if (savedKey) {
-            // Verify it's still valid
             const stillConnected = await isConnected();
             if (stillConnected) {
               setPublicKey(savedKey);
@@ -67,23 +63,16 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
   const connect = async () => {
     setIsLoading(true);
     setError(null);
-    
-    try {
-      // Request access to Freighter
-      await requestAccess();
 
-      // Get public key
+    try {
+      await requestAccess();
       const key = await getPublicKey();
       setPublicKey(key);
-      
-      // Persist to localStorage
       localStorage.setItem('wallet_public_key', key);
-      
-      console.log('✅ Wallet connected:', key);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect wallet';
       setError(errorMessage);
-      console.error('❌ Wallet connection error:', err);
+      console.error('Wallet connection error:', err);
       throw err;
     } finally {
       setIsLoading(false);
@@ -94,7 +83,6 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     setPublicKey(null);
     localStorage.removeItem('wallet_public_key');
     setError(null);
-    console.log('👋 Wallet disconnected');
   };
 
   const value: WalletContextType = {

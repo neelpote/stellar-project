@@ -24,7 +24,6 @@ const isActive = (endTime: number | bigint) => {
   return now < (typeof endTime === 'bigint' ? Number(endTime) : endTime);
 };
 
-// ─── Directory card ───────────────────────────────────────────────────────────
 const StartupCard = ({ address, onClick }: { address: string; onClick: () => void }) => {
   const { data: startup } = useQuery({
     queryKey: ['startupCard', address],
@@ -103,7 +102,6 @@ const StartupCard = ({ address, onClick }: { address: string; onClick: () => voi
   );
 };
 
-// ─── Filtered wrapper ─────────────────────────────────────────────────────────
 const FilteredStartupCard = ({ address, search, filter, onClick }: { address: string; search: string; filter: 'all' | 'open' | 'closed'; onClick: () => void }) => {
   const { data: startup } = useQuery({ queryKey: ['startupCard', address], queryFn: () => getStartupStatus(address), staleTime: 10000 });
   const { data: meta } = useIPFSMetadata(startup?.ipfs_cid);
@@ -116,7 +114,6 @@ const FilteredStartupCard = ({ address, search, filter, onClick }: { address: st
   return <StartupCard address={address} onClick={onClick} />;
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
 interface PublicVotingViewProps { publicKey: string; }
 
 export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
@@ -136,7 +133,6 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
     queryFn: () => viewingAddress ? getStartupStatus(viewingAddress) : null,
     enabled: !!viewingAddress,
     refetchInterval: (data) => {
-      // Only poll if voting is still active
       if (!data || !data.voting_end_time) return false;
       return isActive(data.voting_end_time) ? 5000 : false;
     },
@@ -207,7 +203,6 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
     onError: () => alert('Failed to submit vote. Please try again.'),
   });
 
-  // ─── Detail view ─────────────────────────────────────────────────────────────
   if (viewingAddress) {
     const total = Number(startupData?.yes_votes ?? 0) + Number(startupData?.no_votes ?? 0);
     const pct = total > 0 ? Math.round((Number(startupData!.yes_votes) / total) * 100) : 0;
@@ -351,7 +346,6 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
     );
   }
 
-  // ─── Directory view ───────────────────────────────────────────────────────────
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>

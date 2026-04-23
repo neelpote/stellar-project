@@ -30,11 +30,9 @@ function AppContent() {
   const [viewMode, setViewMode] = useState<ViewMode>('founder');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Fetch all addresses to track unread messages across all chats
   const { data: allVCs = [] } = useQuery({ queryKey: ['allVCs'], queryFn: getAllVCs, enabled: !!wallet.publicKey });
   const { data: allStartups = [] } = useQuery({ queryKey: ['allStartups'], queryFn: getAllStartups, enabled: !!wallet.publicKey });
 
-  // For a founder: unread = messages from VCs. For a VC: unread = messages from founders.
   const chatPeers = wallet.publicKey
     ? [...new Set([...allVCs, ...allStartups].filter(a => a !== wallet.publicKey))]
     : [];
@@ -72,8 +70,6 @@ function AppContent() {
 
   const isAdmin = wallet.publicKey && adminAddress && !adminLoading && wallet.publicKey === adminAddress;
 
-  // ── Role-based nav ────────────────────────────────────────────────────────
-  // Build nav links based on who is connected
   const navLinks = (() => {
     if (!wallet.isConnected) return [
       { label: 'About', view: 'about' as ViewMode },
@@ -90,7 +86,6 @@ function AppContent() {
 
     links.push({ label: 'Vote', view: 'voting' });
 
-    // Non-VCs can still see the "Become VC" path
     if (!isVC) {
       links.push({ label: 'Become VC', view: 'vc' });
     }
@@ -105,13 +100,11 @@ function AppContent() {
     return links;
   })();
 
-  // Auto-redirect to correct home view when role is resolved
   useEffect(() => {
     if (!wallet.isConnected) return;
     if (viewMode === 'founder' && isVC) setViewMode('vc');
   }, [isVC, wallet.isConnected]);
 
-  // Track session when wallet connects
   useEffect(() => {
     if (!wallet.publicKey) return;
     const role = isAdmin ? 'admin' : isVC ? 'vc' : 'founder';
@@ -135,16 +128,13 @@ function AppContent() {
         </div>
       );
     }
-    if (viewMode === 'metrics')
-      return <MetricsDashboard />;
     if (viewMode === 'admin' && isAdmin && adminAddress === wallet.publicKey)
       return <AdminView publicKey={wallet.publicKey} />;
-    if (viewMode === 'metrics' && isAdmin)
-      return <MetricsDashboard />;
     if (viewMode === 'admin' || viewMode === 'metrics') {
       setViewMode(isVC ? 'vc' : 'founder');
       return null;
-    }    switch (viewMode) {
+    }
+    switch (viewMode) {
       case 'vc': return <VCView publicKey={wallet.publicKey} />;
       case 'voting': return <PublicVotingView publicKey={wallet.publicKey} />;
       case 'founder': return <FounderView publicKey={wallet.publicKey} />;
@@ -154,10 +144,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-white text-black font-sans selection:bg-black selection:text-white">
-      {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-black/10">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setViewMode('founder'); }}>
             <div className="w-8 h-8 bg-black flex items-center justify-center">
               <span className="text-white font-bold text-xl">D</span>
@@ -168,7 +156,6 @@ function AppContent() {
             </div>
           </div>
 
-          {/* Desktop Nav — always visible, role-based links */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map(link => (
               <button
@@ -186,7 +173,6 @@ function AppContent() {
             ))}
           </div>
 
-          {/* Wallet */}
           <div className="flex items-center gap-3">
             {wallet.isConnected && wallet.publicKey ? (
               <>
@@ -210,14 +196,12 @@ function AppContent() {
                 Connect
               </button>
             )}
-            {/* Mobile menu toggle — always show */}
             <button className="md:hidden p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-black/10 bg-white">
             {navLinks.map(link => (
@@ -238,13 +222,11 @@ function AppContent() {
         )}
       </nav>
 
-      {/* Main Content */}
       <main className="pt-20">
         {viewMode === 'about' ? (
           <div className="max-w-7xl mx-auto px-6 py-20"><AboutView /></div>
         ) : (!wallet.isConnected || !wallet.publicKey) ? (
             <>
-              {/* Hero */}
               <section className="pt-20 pb-24 border-b border-black/5">
                 <div className="max-w-7xl mx-auto px-6">
                   <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -306,7 +288,6 @@ function AppContent() {
                       </div>
                     </motion.div>
 
-                    {/* Mock proposal card */}
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -362,7 +343,6 @@ function AppContent() {
                 </div>
               </section>
 
-              {/* Problem / Solution */}
               <section className="py-24 border-b border-black/5">
                 <div className="max-w-7xl mx-auto px-6">
                   <div className="grid lg:grid-cols-2 gap-16">
@@ -388,7 +368,6 @@ function AppContent() {
                 </div>
               </section>
 
-              {/* How it works */}
               <section className="py-24 border-b border-black/5">
                 <div className="max-w-7xl mx-auto px-6">
                   <div className="mb-12">
@@ -426,7 +405,6 @@ function AppContent() {
                 </div>
               </section>
 
-              {/* Startup Directory */}
               <section className="py-24 border-b border-black/5">
                 <div className="max-w-7xl mx-auto px-6">
                   <div className="mb-10">
@@ -438,7 +416,6 @@ function AppContent() {
                 </div>
               </section>
 
-              {/* Principles */}
               <section className="py-24 bg-black text-white">
                 <div className="max-w-7xl mx-auto px-6">
                   <div className="mb-12">
@@ -476,7 +453,6 @@ function AppContent() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="py-12 border-t border-black/5">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">

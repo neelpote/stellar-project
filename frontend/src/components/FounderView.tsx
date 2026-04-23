@@ -55,7 +55,6 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
 
   const applyMutation = useMutation({
     mutationFn: async (data: { name: string; desc: string; url: string; team: string; goal: string; milestoneEnabled: boolean; totalMilestones: number }) => {
-      // getAccount auto-funds via Friendbot if wallet is new
       const sourceAccount = await getAccount(publicKey);
       const ipfsCid = await uploadToIPFS({ project_name: data.name, description: data.desc, project_url: data.url, team_info: data.team });
       const contract = new StellarSdk.Contract(CONTRACT_ID);
@@ -75,7 +74,6 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
       if (!signedXdr) throw new Error('User declined the transaction in Freighter');
       const signedTx = StellarSdk.TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE);
       const { hash } = await submitWithFeeBump(signedTx);
-      // Poll for confirmation
       let status = await server.getTransaction(hash);
       let attempts = 0;
       while (status.status === 'NOT_FOUND' && attempts < 30) {
@@ -447,7 +445,6 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
             </div>
           )}
 
-          {/* VC Messages */}
           {allVCs.length > 0 && (
             <div className="card">
               <div className="flex items-center justify-between mb-4">

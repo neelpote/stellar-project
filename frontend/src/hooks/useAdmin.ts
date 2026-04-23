@@ -5,7 +5,8 @@ export const useAdmin = () => {
   return useQuery<string | null>({
     queryKey: ['admin'],
     queryFn: getAdmin,
-    staleTime: 60000, // Admin rarely changes
+    // Admin address changes rarely, so a long stale time is fine
+    staleTime: 60000,
     refetchInterval: 30000,
   });
 };

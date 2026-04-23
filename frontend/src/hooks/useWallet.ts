@@ -12,7 +12,7 @@ export const useWallet = () => {
   const connectWallet = async () => {
     try {
       const connected = await isConnected();
-      
+
       if (!connected) {
         const install = window.confirm('Freighter wallet is not installed. Click OK to open the install page.');
         if (install) window.open('https://www.freighter.app/', '_blank');
@@ -21,22 +21,18 @@ export const useWallet = () => {
 
       await setAllowed();
       const publicKey = await getPublicKey();
-      
-      // Validate the public key is a valid Stellar address
+
       if (!publicKey) {
         throw new Error('No public key received from wallet');
       }
 
       try {
         StellarSdk.StrKey.decodeEd25519PublicKey(publicKey);
-      } catch (error) {
+      } catch {
         throw new Error('Invalid Stellar address format');
       }
-      
-      setWallet({
-        publicKey,
-        isConnected: true,
-      });
+
+      setWallet({ publicKey, isConnected: true });
     } catch (error) {
       console.error('Error connecting wallet:', error);
       alert(`Failed to connect wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -44,10 +40,7 @@ export const useWallet = () => {
   };
 
   const disconnectWallet = () => {
-    setWallet({
-      publicKey: null,
-      isConnected: false,
-    });
+    setWallet({ publicKey: null, isConnected: false });
   };
 
   useEffect(() => {
@@ -56,17 +49,12 @@ export const useWallet = () => {
         const connected = await isConnected();
         if (connected) {
           const publicKey = await getPublicKey();
-          
-          // Validate the public key
           if (publicKey) {
             try {
               StellarSdk.StrKey.decodeEd25519PublicKey(publicKey);
-              setWallet({
-                publicKey,
-                isConnected: true,
-              });
-            } catch (error) {
-              console.error('Invalid public key format:', error);
+              setWallet({ publicKey, isConnected: true });
+            } catch {
+              // Invalid key format — don't restore the session
             }
           }
         }

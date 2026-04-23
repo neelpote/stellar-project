@@ -6,14 +6,11 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publisha
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const getChatId = (founderAddress: string, vcAddress: string) => {
-  // Deterministic chat ID — always same regardless of who calls it
+  // Sort so the same pair always produces the same ID regardless of call order
   const sorted = [founderAddress, vcAddress].sort();
   return `${sorted[0]}_${sorted[1]}`;
 };
 
-// ── Analytics helpers ─────────────────────────────────────────────────────────
-
-// Call once when wallet connects — tracks DAU
 export const trackSession = async (walletAddress: string, role: 'founder' | 'vc' | 'admin' | 'visitor') => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -29,7 +26,6 @@ export const trackSession = async (walletAddress: string, role: 'founder' | 'vc'
   } catch { /* non-critical */ }
 };
 
-// Track feature usage events
 export const trackEvent = async (walletAddress: string, event: string, metadata: Record<string, unknown> = {}) => {
   try {
     await supabase.from('page_events').insert({ wallet_address: walletAddress, event, metadata });

@@ -21,7 +21,6 @@ const isActive = (endTime: number | bigint) => {
   return now < (typeof endTime === 'bigint' ? Number(endTime) : endTime);
 };
 
-// ─── Card ─────────────────────────────────────────────────────────────────────
 const PublicStartupCard = ({ address, onClick }: { address: string; onClick: () => void }) => {
   const { data: startup } = useQuery({
     queryKey: ['startupCard', address],
@@ -97,7 +96,6 @@ const PublicStartupCard = ({ address, onClick }: { address: string; onClick: () 
   );
 };
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 export const PublicStartupDirectory = ({ onConnectWallet }: { onConnectWallet: () => void }) => {
   const [viewingAddress, setViewingAddress] = useState<string | null>(null);
 
@@ -116,7 +114,6 @@ export const PublicStartupDirectory = ({ onConnectWallet }: { onConnectWallet: (
 
   const { data: metadata, isLoading: metaLoading } = useIPFSMetadata(startupData?.ipfs_cid);
 
-  // ─── Detail view ─────────────────────────────────────────────────────────────
   if (viewingAddress) {
     const total = Number(startupData?.yes_votes ?? 0) + Number(startupData?.no_votes ?? 0);
     const pct = total > 0 ? Math.round((Number(startupData!.yes_votes) / total) * 100) : 0;
@@ -235,7 +232,6 @@ export const PublicStartupDirectory = ({ onConnectWallet }: { onConnectWallet: (
     );
   }
 
-  // ─── Directory view ───────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {allStartups.length > 0 ? (

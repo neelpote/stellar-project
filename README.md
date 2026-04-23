@@ -92,14 +92,6 @@ Full security review is in [SECURITY.md](SECURITY.md). The short version:
 
 ---
 
-## Monitoring Dashboard
-
-The metrics dashboard is live inside the app — hit the Metrics tab after opening the app. It shows daily active wallets, total sessions, on-chain startup and VC counts, messages sent, and a 7-day DAU chart. Updates every 30 seconds from Supabase.
-
-Vercel handles deployment monitoring (uptime, build logs, function errors).
-
----
-
 ## Data Indexing
 
 Two layers:
@@ -174,6 +166,63 @@ Feedback collected via Google Form from real users who tested the app.
 | Vikram Nair | vikram.nair.chn@gmail.com | `GALSWRQA4Z433TPDPEJ6DZ5WQP3HUWEIE63E7CVGDKUOTKMS4G2PDEUH` | Freighter not installed shows generic error with no install link | [`70772cb`](https://github.com/neelpote/deco-combinator/commit/70772cb) |
 | Chidi Okonkwo | chidi.okonkwo.abj@gmail.com | `GDUQE3PRHTNO5UMZWOMIBYHCDN66IXQUZ6WTR3KFDAUUT6OD6ZXBTWYV` | Wrong address in VC search spins forever with no error | [`70772cb`](https://github.com/neelpote/deco-combinator/commit/70772cb) |
 | Kavya Reddy | kavya.reddy.hyd@gmail.com | `GCIYAHMBKQEV7RR7HZBRBNAEPMRJYAYRSTX6BXL3W6HKSWSQZXSQSMG6` | Mobile layout breaks on VC dashboard | [`ec3b5bc`](https://github.com/neelpote/deco-combinator/commit/ec3b5bc) |
+
+---
+
+## Advanced Feature — Milestone-Based Vesting
+
+DeCo implements on-chain milestone vesting for startup funding. When a founder enables milestones at application time, invested funds are held in escrow by the contract rather than released immediately. VCs who invested vote to approve each milestone. Once a strict majority approves, the contract releases a proportional tranche directly to the founder's wallet. The last milestone releases all remaining escrowed funds to prevent dust locks.
+
+Key implementation details:
+- `milestone_enabled`, `total_milestones`, `current_milestone`, and `escrowed_funds` are stored per startup in `StartupData`
+- `vote_milestone()` records each VC's approval on-chain, keyed by `MilestoneVote(vc, founder, milestone_index)`
+- `release_milestone()` tallies votes, enforces majority (`approve_count * 2 > total_investors`), calculates the tranche, transfers XLM from the contract to the founder, and increments `current_milestone`
+- Non-milestone startups use the direct `claim_funds()` path — both flows coexist in the same contract
+
+Proof: [`contract/src/lib.rs`](contract/src/lib.rs) — `vote_milestone`, `release_milestone`, and `claim_funds` functions. The `milestone_enabled` toggle is exposed in the founder application UI and the VC investment view shows live milestone progress and vote tally.
+
+---
+
+## Metrics Dashboard
+
+Live inside the app — open the app and click the **Metrics** tab.
+
+**Direct link:** https://frontend-eight-navy-19.vercel.app (select Metrics from the nav)
+
+What it shows:
+- DAU today and total unique wallets (Supabase `wallet_sessions`)
+- Startups and VCs registered on-chain (live Soroban RPC)
+- Messages sent, applications, investments, and VC stakes (Supabase `page_events`)
+- 7-day DAU bar chart and feature usage breakdown
+
+Data refreshes every 30 seconds automatically.
+
+---
+
+## Monitoring Dashboard
+
+Deployment monitoring is handled by Vercel. Build logs, function errors, and uptime are visible at:
+
+**Vercel dashboard:** https://vercel.com/neelpote/frontend (requires project access)
+
+Runtime analytics (wallet activity, feature events) are tracked in Supabase:
+
+**Supabase project:** https://cmitzlpyzkehsnshuhxl.supabase.co
+
+---
+
+## Security Checklist
+
+Full checklist with pass/fail status: [SECURITY.md](SECURITY.md)
+
+Summary of completed items:
+- `require_auth()` on every state-changing contract function
+- Milestone escrow with majority-vote release — funds never held by an admin key
+- No upgrade mechanism — contract is immutable post-deploy
+- Fee bump API secret stored in Vercel env only, never in the frontend bundle
+- Supabase RLS enforced on all three tables
+- All wallet addresses validated via `StellarSdk.StrKey` before use
+- No private keys in git history
 
 ---
 

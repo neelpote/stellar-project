@@ -15,7 +15,7 @@ interface ChatBoxProps {
   otherAddress: string;
   otherLabel: string;
   onClose: () => void;
-  onRead?: () => void; // called when chat is opened so parent can clear badge
+  onRead?: () => void;
 }
 
 export const ChatBox = ({ myAddress, otherAddress, otherLabel, onClose, onRead }: ChatBoxProps) => {
@@ -31,7 +31,6 @@ export const ChatBox = ({ myAddress, otherAddress, otherLabel, onClose, onRead }
     onRead?.();
   }, [chatId]);
 
-  // Load existing messages
   useEffect(() => {
     supabase
       .from('messages')
@@ -41,7 +40,6 @@ export const ChatBox = ({ myAddress, otherAddress, otherLabel, onClose, onRead }
       .then(({ data }) => { if (data) setMessages(data); });
   }, [chatId]);
 
-  // Subscribe to new messages
   useEffect(() => {
     const channel = supabase
       .channel(`chat:${chatId}`)
@@ -50,7 +48,6 @@ export const ChatBox = ({ myAddress, otherAddress, otherLabel, onClose, onRead }
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
         (payload) => {
           setMessages(prev => [...prev, payload.new as Message]);
-          // Mark read immediately since chat is open
           markChatRead(chatId);
           onRead?.();
         }
@@ -59,7 +56,6 @@ export const ChatBox = ({ myAddress, otherAddress, otherLabel, onClose, onRead }
     return () => { supabase.removeChannel(channel); };
   }, [chatId]);
 
-  // Scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -81,8 +77,7 @@ export const ChatBox = ({ myAddress, otherAddress, otherLabel, onClose, onRead }
   return (
     <div className="fixed bottom-4 right-4 w-80 bg-white border border-black shadow-2xl flex flex-col z-50" style={{ height: '420px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-black bg-black text-white">
-        <div>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-black bg-black text-white">        <div>
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Chat with</div>
           <div className="text-sm font-bold">{otherLabel} · {truncate(otherAddress)}</div>
         </div>

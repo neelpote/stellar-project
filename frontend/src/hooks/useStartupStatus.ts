@@ -7,7 +7,7 @@ export const useStartupStatus = (founderAddress: string | null) => {
     queryKey: ['startupStatus', founderAddress],
     queryFn: () => founderAddress ? getStartupStatus(founderAddress) : null,
     enabled: !!founderAddress,
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10000,
     staleTime: 5000,
   });
 };

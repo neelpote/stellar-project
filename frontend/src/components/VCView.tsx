@@ -11,7 +11,7 @@ import { trackEvent } from '../supabase';
 
 const horizonServer = new StellarSdk.Horizon.Server(HORIZON_URL);
 
-// Filters out startups with no IPFS name in the browse list
+// Only renders if the startup has a valid IPFS name — keeps the browse list clean
 const BrowseStartupButton = ({ address, onClick }: { address: string; onClick: () => void }) => {
   const { data: startup } = useQuery({ queryKey: ['startupCard', address], queryFn: () => getStartupStatus(address), staleTime: 30000 });
   const { data: meta } = useIPFSMetadata(startup?.ipfs_cid);
@@ -34,11 +34,11 @@ export const VCView = ({ publicKey }: VCViewProps) => {
   const [searchAddress, setSearchAddress] = useState('');
   const [viewingAddress, setViewingAddress] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('');
+  const [investAmount, setInvestAmount] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
   const [showAllStartups, setShowAllStartups] = useState(false);
   const queryClient = useQueryClient();
 
-  // Unread notifications — track all startups the VC is viewing
   const { getUnread, clearUnread } = useUnreadCounts(
     publicKey,
     viewingAddress ? [viewingAddress] : []
@@ -92,8 +92,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
     queryFn: () => viewingAddress ? hasVotedMilestone(publicKey, viewingAddress, currentMilestone) : false,
     enabled: !!viewingAddress && !!startupData?.milestone_enabled && Number(myInvestment) > 0,
   });
-
-  // ── Mutations ────────────────────────────────────────────────────────────────
 
   const stakeMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -182,8 +180,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
     onError: (e) => alert(`Vote failed: ${e instanceof Error ? e.message : 'Unknown error'}`),
   });
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
-
   const handleStake = (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyName.trim()) { alert('Please enter your company name'); return; }
@@ -201,8 +197,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
     investMutation.mutate({ founder: viewingAddress, amount: investAmount });
   };
 
-  // ── Loading ───────────────────────────────────────────────────────────────────
-
   if (vcLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -213,8 +207,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
       </div>
     );
   }
-
-  // ── Not a VC yet ──────────────────────────────────────────────────────────────
 
   if (!vcData) {
     const stakeXLM = (Number(stakeRequired) / 1e7).toFixed(2);
@@ -283,8 +275,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
     );
   }
 
-  // ── VC Dashboard ──────────────────────────────────────────────────────────────
-
   const isMilestoneStartup = startupData?.milestone_enabled;
   const totalMilestonesCount = Number(startupData?.total_milestones || 1);
   const allMilestonesReleased = currentMilestone >= totalMilestonesCount;
@@ -340,7 +330,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
 
       {viewingAddress && startupData && startupData.exists && (
         <div className="space-y-4">
-          {/* Startup info */}
           <div className="card">
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -388,7 +377,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
             </div>
           </div>
 
-          {/* Invest */}
           <div className="card">
             <div className="text-[11px] font-bold uppercase tracking-widest mb-2">Invest in this Startup</div>
             {isMilestoneStartup && (
@@ -405,7 +393,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
             </form>
           </div>
 
-          {/* Message founder */}
           <div className="card">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[11px] font-bold uppercase tracking-widest">Direct Message</div>
@@ -426,7 +413,6 @@ export const VCView = ({ publicKey }: VCViewProps) => {
             </button>
           </div>
 
-          {/* Milestone voting — only shown if this VC invested and milestones are enabled */}
           {isMilestoneStartup && hasInvested && !allMilestonesReleased && (
             <div className="card">
               <div className="text-[11px] font-bold uppercase tracking-widest mb-2">Vote on Milestone #{currentMilestone + 1}</div>

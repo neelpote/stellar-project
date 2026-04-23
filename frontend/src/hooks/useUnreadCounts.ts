@@ -18,13 +18,10 @@ export const useUnreadCounts = (myAddress: string, otherAddresses: string[]) => 
   useEffect(() => {
     if (!myAddress || otherAddresses.length === 0) return;
 
-    // Clean up old channels
     channelsRef.current.forEach(ch => supabase.removeChannel(ch));
     channelsRef.current = [];
 
-    const newMap: Record<string, number> = {};
-
-    otherAddresses.forEach(addr => {
+    const newMap: Record<string, number> = {};    otherAddresses.forEach(addr => {
       const chatId = getChatId(myAddress, addr);
 
       // Load initial unread count
@@ -49,14 +46,12 @@ export const useUnreadCounts = (myAddress: string, otherAddresses: string[]) => 
           { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
           (payload) => {
             const msg = payload.new as { sender: string; text: string; chat_id: string };
-            // Only count messages from the other person
             if (msg.sender !== myAddress) {
               setUnreadMap(prev => ({
                 ...prev,
                 [chatId]: (prev[chatId] || 0) + 1,
               }));
 
-              // Browser notification if tab is not focused
               if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
                 new Notification('New message on DeCo', {
                   body: `${msg.sender.slice(0, 6)}...${msg.sender.slice(-4)}: ${msg.text.slice(0, 60)}`,
