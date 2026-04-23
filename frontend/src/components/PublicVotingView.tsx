@@ -103,11 +103,26 @@ const StartupCard = ({ address, onClick }: { address: string; onClick: () => voi
   );
 };
 
+// ─── Filtered wrapper ─────────────────────────────────────────────────────────
+const FilteredStartupCard = ({ address, search, filter, onClick }: { address: string; search: string; filter: 'all' | 'open' | 'closed'; onClick: () => void }) => {
+  const { data: startup } = useQuery({ queryKey: ['startupCard', address], queryFn: () => getStartupStatus(address), staleTime: 10000 });
+  const { data: meta } = useIPFSMetadata(startup?.ipfs_cid);
+  if (!startup) return null;
+  if (meta !== undefined && !meta?.project_name) return null;
+  const active = isActive(startup.voting_end_time);
+  if (filter === 'open' && !active) return null;
+  if (filter === 'closed' && active) return null;
+  if (search && meta?.project_name && !meta.project_name.toLowerCase().includes(search.toLowerCase())) return null;
+  return <StartupCard address={address} onClick={onClick} />;
+};
+
 // ─── Main component ───────────────────────────────────────────────────────────
 interface PublicVotingViewProps { publicKey: string; }
 
 export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
   const [viewingAddress, setViewingAddress] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'open' | 'closed'>('all');
   const queryClient = useQueryClient();
 
   const { data: allStartups = [] } = useQuery({
@@ -318,7 +333,7 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
               ) : (
                 <div className="p-4 border border-black/10 bg-zinc-50 text-center">
                   <div className="text-[11px] font-bold uppercase tracking-widest mb-1">Voting Ended</div>
-                  <p className="text-xs text-zinc-500">The voting period for this application has closed.</p>
+                  <p className="text-xs text-zinc-500">The 30-day voting window has closed. VCs can still invest in this startup regardless of the vote outcome. The community vote is advisory — it signals interest but does not block funding.</p>
                 </div>
               )}
             </div>
@@ -357,11 +372,39 @@ export const PublicVotingView = ({ publicKey }: PublicVotingViewProps) => {
       </div>
 
       {allStartups.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {allStartups.map((address: string) => (
-            <StartupCard key={address} address={address} onClick={() => setViewingAddress(address)} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by project name..."
+              className="form-input flex-1"
+            />
+            <div className="flex gap-2">
+              {(['all', 'open', 'closed'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-4 py-2 text-[11px] font-bold uppercase tracking-widest border transition-all ${filter === f ? 'bg-black text-white border-black' : 'border-black/20 text-zinc-500 hover:border-black hover:text-black'}`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {allStartups.map((address: string) => (
+              <FilteredStartupCard
+                key={address}
+                address={address}
+                search={search}
+                filter={filter}
+                onClick={() => setViewingAddress(address)}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <div className="card text-center py-16">
           <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-2">No Applications Yet</div>
