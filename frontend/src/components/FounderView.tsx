@@ -156,7 +156,10 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectName.trim() || !description.trim() || !projectUrl.trim() || !teamInfo.trim() || !fundingGoal.trim()) { alert('Please fill in all fields'); return; }
-    const milestones = milestoneEnabled ? Math.max(1, parseInt(totalMilestones) || 3) : 1;
+    const goalNum = parseFloat(fundingGoal);
+    if (isNaN(goalNum) || goalNum < 1) { alert('Funding goal must be at least 1 XLM'); return; }
+    if (goalNum > 10000000) { alert('Funding goal cannot exceed 10,000,000 XLM'); return; }
+    const milestones = milestoneEnabled ? Math.max(2, parseInt(totalMilestones) || 3) : 1;
     applyMutation.mutate({ name: projectName, desc: description, url: projectUrl, team: teamInfo, goal: fundingGoal, milestoneEnabled, totalMilestones: milestones });
   };
 
@@ -234,13 +237,14 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest mb-2">Funding Goal (XLM) *</label>
-                <input type="number" step="0.01" value={fundingGoal} onChange={(e) => setFundingGoal(e.target.value)} className="form-input" placeholder="10000.00" />
+                <input type="number" step="1" min="1" max="10000000" value={fundingGoal} onChange={(e) => setFundingGoal(e.target.value)} className="form-input" placeholder="10000" />
+                <p className="text-xs text-zinc-400 mt-1">Minimum 1 XLM, maximum 10,000,000 XLM</p>
               </div>
               <div className="border border-black/10 p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[11px] font-bold uppercase tracking-widest">Milestone-Based Vesting</div>
-                    <p className="text-xs text-zinc-500 mt-1">Funds held in escrow and released in tranches as VCs approve milestones.</p>
+                    <p className="text-xs text-zinc-500 mt-1">Instead of releasing all funds at once, funds are split into equal tranches. Each tranche is only released after a majority of your investors vote to approve your progress. This builds trust with VCs and keeps you accountable.</p>
                   </div>
                   <button
                     type="button"
@@ -253,16 +257,16 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
                 </div>
                 {milestoneEnabled && (
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-widest mb-2">Number of Milestones</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-widest mb-2">Number of Milestones (min 2)</label>
                     <input
                       type="number"
                       min="2"
                       max="10"
                       value={totalMilestones}
-                      onChange={(e) => setTotalMilestones(e.target.value)}
+                      onChange={(e) => setTotalMilestones(String(Math.max(2, Math.min(10, parseInt(e.target.value) || 2))))}
                       className="form-input w-32"
                     />
-                    <p className="text-xs text-zinc-400 mt-1">Funds released in {totalMilestones} equal tranches after VC majority vote.</p>
+                    <p className="text-xs text-zinc-400 mt-1">Funds released in {totalMilestones} equal tranches after VC majority vote. Minimum 2, maximum 10.</p>
                   </div>
                 )}
               </div>
@@ -305,7 +309,7 @@ export const FounderView = ({ publicKey }: FounderViewProps) => {
                 </div>
                 <div className="pt-3 border-t border-black/5">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Funding Goal</div>
-                  <div className="text-xl font-bold">{(Number(startupData.funding_goal) / 1e7).toFixed(2)} XLM</div>
+                  <div className="text-xl font-bold">{Math.round(Number(startupData.funding_goal) / 1e7).toLocaleString()} XLM</div>
                 </div>
                 <div className="pt-3 border-t border-black/5">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">IPFS CID</div>
