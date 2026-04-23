@@ -34,8 +34,8 @@ export const VCView = ({ publicKey }: VCViewProps) => {
   const [searchAddress, setSearchAddress] = useState('');
   const [viewingAddress, setViewingAddress] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('');
-  const [investAmount, setInvestAmount] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [showAllStartups, setShowAllStartups] = useState(false);
   const queryClient = useQueryClient();
 
   // Unread notifications — track all startups the VC is viewing
@@ -238,6 +238,18 @@ export const VCView = ({ publicKey }: VCViewProps) => {
           ))}
         </div>
         <div className="card">
+          <div className="text-[11px] font-bold uppercase tracking-widest mb-3">What you get as a VC</div>
+          <ul className="space-y-2 text-sm text-zinc-600 mb-6">
+            {[
+              'Access to invest in any listed startup on DeCo',
+              'On-chain portfolio tracking — all investments visible publicly',
+              'Milestone voting rights — approve or reject founder progress',
+              'Direct messaging with founders',
+              'Verified VC badge shown on your profile',
+            ].map(b => (
+              <li key={b} className="flex gap-2"><span className="font-bold text-black shrink-0">—</span>{b}</li>
+            ))}
+          </ul>
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-1">Required Stake</div>
@@ -301,10 +313,18 @@ export const VCView = ({ publicKey }: VCViewProps) => {
         <div className="card">
           <div className="text-[11px] font-bold uppercase tracking-widest mb-4">Browse Startups</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {allStartups.slice(0, 6).map((address: string) => (
+            {(showAllStartups ? allStartups : allStartups.slice(0, 6)).map((address: string) => (
               <BrowseStartupButton key={address} address={address} onClick={() => setViewingAddress(address)} />
             ))}
           </div>
+          {allStartups.length > 6 && (
+            <button
+              onClick={() => setShowAllStartups(!showAllStartups)}
+              className="mt-4 text-[11px] font-bold uppercase tracking-widest text-zinc-400 hover:text-black transition-colors"
+            >
+              {showAllStartups ? '↑ Show Less' : `↓ Show All ${allStartups.length} Startups`}
+            </button>
+          )}
         </div>
       )}
 
